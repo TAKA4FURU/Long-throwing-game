@@ -17,6 +17,17 @@ button{flex:1;padding:18px 8px;font-size:1.05rem;font-weight:700;color:#fff;bord
 #T{background:var(--a)}#PW{flex:1;display:flex;gap:4px}.pw{background:var(--b);padding:18px 1px;font-size:.66rem;touch-action:none;min-width:0}#T{touch-action:none;font-size:.9rem;line-height:1.35}
 button:active{filter:brightness(.85);transform:scale(.97)}
 p{font-size:.8rem;margin:0;opacity:.8;text-align:center}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:50;padding:12px;box-sizing:border-box}
+.ov[hidden]{display:none}
+.card{background:#2a2320;color:#f4efe6;border-radius:14px;padding:16px;width:100%;max-width:420px;max-height:90vh;display:flex;flex-direction:column;gap:10px;box-sizing:border-box;user-select:text;-webkit-user-select:text}
+.card h3{margin:0;font-size:1.05rem}
+.card input{font-size:16px;padding:10px;border-radius:8px;border:1px solid #888;background:#fff;color:#000}
+.card small{opacity:.75}
+.bt{display:flex;gap:10px}.bt button{flex:1;padding:12px 6px;background:var(--b)}.bt .g{background:#666}
+#RKl{overflow:auto;max-height:55vh;border-top:1px solid #555}
+.rw{display:flex;gap:8px;padding:5px 2px;border-bottom:1px solid #3a322e;font-size:.9rem}
+.rw .r{width:3.2em;text-align:right;opacity:.8}.rw .n{flex:1;word-break:break-all}.rw .d{text-align:right}
+.rw.me{background:#5a4a1a;color:#ffe9a0;font-weight:700}
 </style>
 </head>
 <body>
@@ -24,6 +35,7 @@ p{font-size:.8rem;margin:0;opacity:.8;text-align:center}
 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;width:100%;max-width:800px">
 <button id="M" style="flex:none;padding:6px 12px;font-size:.85rem;background:#666"></button>
 <button id="BG" style="flex:none;padding:6px 12px;font-size:.85rem;background:#666"></button>
+<button id="RB" style="flex:none;padding:6px 12px;font-size:.85rem;background:#666;display:none">🏆 ランキング</button>
 <label style="display:flex;align-items:center;gap:6px;font-size:.85rem">BGM音量 <input id="BV" type="range" min="0" max="100" value="60" style="width:130px"></label>
 </div>
 <canvas id="c" width="800" height="450"></canvas>
@@ -32,13 +44,26 @@ p{font-size:.8rem;margin:0;opacity:.8;text-align:center}
   <div id="PW"><button class="pw" id="P1">パワー<br>(全キー)</button><button class="pw" id="P2">パワー<br>(全キー)</button><button class="pw" id="P3">パワー<br>(全キー)</button><button class="pw" id="P4">パワー<br>(全キー)</button></div>
 </div>
 <p>「Ready…」でタップ／キー → 「Throw it!」から10秒以内に発射！　パワー：スペース以外のキーを連打（スマホはパワーボタンをこすって連打）／なげる：スペースを押し続けて角度（短い＝0°、長い＝180°）→ 離すと発射。3投のうち一番遠くを競います</p>
+<div id="NM" class="ov" hidden><div class="card">
+<h3>🏆 ランキングに載せますか？</h3>
+<div>今回の最長：<b id="NMd"></b></div>
+<input id="NMi" maxlength="10" placeholder="名前（10文字まで）" autocomplete="off">
+<small>名前は全員に見えます。本名は入れないでください。</small>
+<div id="NMm"></div>
+<div class="bt"><button id="NMok">載せる</button><button id="NMsk" class="g">スキップ</button></div>
+</div></div>
+<div id="RK" class="ov" hidden><div class="card">
+<h3>🏆 ランキング（上位100位）</h3>
+<div id="RKm"></div><div id="RKl"></div>
+<div class="bt"><button id="RKcl">閉じる</button></div>
+</div></div>
 <script>
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
 const GY=380,SC=8,G=9.8*SC,N=3,OX=230,RX=-150,LIMIT=10;
 let S,best=0;
 try{best=parseFloat(localStorage.getItem('gbest'))||0}catch(e){}
 function reset(){bgmAt=0;bgmStarted=false;bgmNoLoop=false;S={state:'tap',rt:1.5,t:LIMIT,power:0,angle:0,holding:false,n:0,roll:null,rolled:false,res:[],angs:[],fl:[],lfoul:false,pos:[],rx:RX,rrun:false,go:0,ph:0,flash:0,fresh:false,ld:0,lx:0,p:null,cam:0,msg:'',msgT:0,wait:0,amb:null,fail:null}}
-function mash(){if(S.state==='aim'){S.power+=7/1.5;uho(S.power)}}
+function mash(){if(modalOpen)return;if(S.state==='aim'){S.power+=7/1.5;uho(S.power)}}
 let muted=false;try{muted=localStorage.getItem('gmute')==='1'}catch(e){}
 let ac,out,noiseBuf;
 function ctxA(){
@@ -245,7 +270,7 @@ function endFail(){
   noise(0.7,200,0.6,0.6,0.05,0.01);
   [[311,293,0.32,0.9],[293,277,0.32,1.3],[277,261,0.32,1.7],[261,175,1.1,2.1]].forEach(([a,b,d,w])=>tone(a,b,d,'sawtooth',0.12,w));
 }
-function bDown(){if(S.state==='aim'){S.holding=true;S.angle=0}}
+function bDown(){if(modalOpen)return;if(S.state==='aim'){S.holding=true;S.angle=0}}
 function bUp(){
   if(S.state!=='aim'||!S.holding)return;
   S.holding=false;
@@ -258,15 +283,13 @@ function bUp(){
   S.power=0;S.state='fly';swoosh();shoutCry();afterRelease();
 }
 function restart(){
+  if(modalOpen)return;
   if(S.state==='tap'){S.state='title';bgmStart('title')}
   else if(S.state==='title'){S.state='ready';bgmStop();whistle(0.12)}
   else if(S.state==='ready'){S.state='aim';S.angle=0;S.t=LIMIT;S.lastTick=99;S.go=1.3;whistle(0.9)}
   else if(S.state==='announce'&&S.hold<=0){S.state='board';S.hold=0.6;S.flash=0.25;boardSnd()}
   else if(S.state==='board'&&S.hold<=0){S.cam=0;afterThrow()}
-  else if(S.state==='over'){
-    if(!S.fail&&S.rolled&&Math.max(...S.res)>=24000)startBonus();
-    else reset();
-  }
+  else if(S.state==='over'){afterOver()}
   else if(S.state==='bonus'){
     const b=S.bonus;
     if(b.hold<=0&&!b.skip){b.a0=bonusAlpha(b);b.skip=true;b.sk=0;trkStop('anthem')}
@@ -287,6 +310,7 @@ PW.addEventListener('pointermove',e=>{
 ['pointerup','pointercancel'].forEach(t=>PW.addEventListener(t,e=>lastBtn.delete(e.pointerId)));
 cv.addEventListener('pointerdown',restart);
 addEventListener('keydown',e=>{
+  if(modalOpen||(e.target&&e.target.tagName==='INPUT'))return;
   if(e.ctrlKey||e.metaKey||e.altKey)return;
   const k=e.key.toLowerCase();
   if(k===' '||k.startsWith('arrow'))e.preventDefault();
@@ -296,6 +320,73 @@ addEventListener('keydown',e=>{
 });
 addEventListener('keyup',e=>{if(e.key===' ')bUp()});
 
+// ===== オンラインランキング（Googleスプレッドシート）=====
+const RANK_URL='https://script.google.com/macros/s/AKfycbwVgrbVWjFYQd5eB9noNXR137t1HkjnBL2z5duGXqokCXCaov8_sSGPSXJXYGZ3fIIf/exec';   // ← Apps Script の「ウェブアプリのURL」を入れる。空のあいだは、ランキング機能は出ません
+let modalOpen=false,pid_=null;
+const $=id=>document.getElementById(id);
+function pid(){
+  if(pid_)return pid_;
+  try{pid_=localStorage.getItem('gpid')}catch(e){}
+  if(!pid_||!/^[0-9a-f]{16,64}$/.test(pid_)){
+    const a=new Uint8Array(12);
+    if(window.crypto&&window.crypto.getRandomValues)window.crypto.getRandomValues(a);
+    else for(let i=0;i<a.length;i++)a[i]=Math.floor(Math.random()*256);
+    pid_=Array.from(a,b=>('0'+b.toString(16)).slice(-2)).join('');
+    try{localStorage.setItem('gpid',pid_)}catch(e){}
+  }
+  return pid_;
+}
+function rankFetch(kind,body){
+  const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),12000);
+  const req=kind==='get'?fetch(RANK_URL+'?id='+pid(),{signal:ac.signal}):fetch(RANK_URL,{method:'POST',body:JSON.stringify(body),signal:ac.signal});
+  return req.then(r=>r.json()).finally(()=>clearTimeout(tm));
+}
+function showModal(el){el.hidden=false;modalOpen=true}
+function hideModal(el){el.hidden=true;modalOpen=false}
+function openNameEntry(d,done){
+  const m=$('NM'),inp=$('NMi'),msg=$('NMm'),ok=$('NMok'),sk=$('NMsk');
+  $('NMd').textContent=d.toFixed(1)+' m';
+  let saved='';try{saved=localStorage.getItem('gname')||''}catch(e){}
+  inp.value=saved;msg.textContent='';ok.disabled=false;
+  ok.onclick=()=>{
+    const name=inp.value.replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,10);
+    if(!name){msg.textContent='名前を入れてください（載せないときは「スキップ」）';return}
+    try{localStorage.setItem('gname',name)}catch(e){}
+    ok.disabled=true;msg.textContent='送信中…';
+    rankFetch('post',{id:pid(),name:name,dist:d}).then(r=>{
+      if(!r||!r.ok)throw new Error('ng');
+      hideModal(m);openRanking(done);
+    }).catch(()=>{ok.disabled=false;msg.textContent='送信できませんでした。通信を確認して、もう一度「載せる」を押してください。'});
+  };
+  sk.onclick=()=>{hideModal(m);done()};
+  showModal(m);
+}
+function openRanking(done){
+  const m=$('RK'),list=$('RKl'),me=$('RKm');
+  list.textContent='';me.textContent='読み込み中…';
+  $('RKcl').onclick=()=>{hideModal(m);if(done)done()};
+  showModal(m);
+  rankFetch('get').then(r=>{
+    if(!r||!r.ok)throw new Error('ng');
+    me.textContent=r.me?('あなたの順位：'+r.me.rank+'位　'+Number(r.me.d).toFixed(1)+' m（参加 '+r.total+' 人）'):('参加 '+r.total+' 人');
+    const cnt={};r.rows.forEach(x=>{cnt[x.n]=(cnt[x.n]||0)+1});
+    r.rows.forEach((x,i)=>{
+      const row=document.createElement('div');row.className='rw'+(r.me&&r.me.rank===i+1?' me':'');
+      const a=document.createElement('span');a.className='r';a.textContent=(i+1)+'位';
+      const b=document.createElement('span');b.className='n';b.textContent=x.n+(cnt[x.n]>1?' #'+x.t:'');
+      const c=document.createElement('span');c.className='d';c.textContent=Number(x.d).toFixed(1)+' m';
+      row.append(a,b,c);list.appendChild(row);
+    });
+    if(!r.rows.length)list.textContent='まだ記録がありません';
+    const mine=list.querySelector('.me');if(mine&&mine.scrollIntoView)mine.scrollIntoView({block:'center'});
+  }).catch(()=>{me.textContent='ランキングに接続できませんでした。'});
+}
+function bestValid(){let m=0;S.res.forEach((d,i)=>{if(!S.fl[i]&&d>m)m=d});return m}
+function finishOver(){if(!S.fail&&S.rolled&&Math.max(...S.res)>=24000)startBonus();else reset()}
+function afterOver(){const d=bestValid();if(RANK_URL&&d>0)openNameEntry(d,finishOver);else finishOver()}
+const RB=document.getElementById('RB');
+RB.onclick=()=>{if(S.state==='tap'||S.state==='title')openRanking(null);RB.blur()};
+function rbShow(){const v=(RANK_URL&&!modalOpen&&(S.state==='tap'||S.state==='title'))?'':'none';if(RB.style.display!==v)RB.style.display=v}
 function afterThrow(){
   if(S.n>=N){S.state='over';endNormal()}else{S.state='ready';S.p=null;S.t=LIMIT;S.rx=RX;S.rrun=false;S.cam=0;whistle(0.12)}
 }
@@ -370,7 +461,7 @@ function update(dt){
   if(S.msgT>0)S.msgT-=dt;
 }
 function em(t,x,y,s,rot){
-  ctx.save();ctx.translate(x,y);if(rot)ctx.rotate(rot);
+  ctx.save();ctx.fillStyle='#000';ctx.translate(x,y);if(rot)ctx.rotate(rot);
   ctx.font=s+'px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(t,0,0);ctx.restore();
 }
 function txt(t,x,y,s,c,al){ctx.fillStyle=c||'#2b2118';ctx.font='bold '+s+'px system-ui,sans-serif';ctx.textAlign=al||'left';ctx.textBaseline='alphabetic';ctx.fillText(t,x,y)}
@@ -833,7 +924,7 @@ function drawTitle(){
 let last=performance.now();
 function loop(t){
   const dt=Math.min(0.05,(t-last)/1000);last=t;
-  update(dt);draw();drawRoll();if(S.state==='title')drawTitle();if(S.state==='tap')drawTap();requestAnimationFrame(loop);
+  update(dt);draw();drawRoll();rbShow();if(S.state==='title')drawTitle();if(S.state==='tap')drawTap();requestAnimationFrame(loop);
 }
 bgmLoad();reset();requestAnimationFrame(loop);
 </script>
