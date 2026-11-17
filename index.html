@@ -702,7 +702,7 @@ function curPose(){
   return {fl:fl,pose:{bob:bob,legs:legsFor(wB,wC,0),crouch:3*wC,shift:0,lean:lerp(3*wB,thp*.33,wC),wB:wB,wC:wC,tuck:0,bowAng:thp,
     rw:wR,rest:false,profile:wC>.5,headAng:thp*.67*wC,phi:rev>0?phiSpin:150,rev:rev,hold:true}};
 }
-function set(m,p,h,a){mode=m;pw=p;holdB=h;ang=a;if(m==='idle')craterT=0}
+function set(m,p,h,a){mode=m;pw=p;holdB=h;ang=a;if(m==='idle'){craterT=0;craterD=0}}
 function start(p,a,cb){
   const fl=a>90,thp=fl?180-a:a,rev=revOf(p),now=rev>0?phiSpin:150;
   let dl=(((now-thp)%360)+360)%360;if(dl<150)dl+=360;
@@ -746,7 +746,7 @@ function poopEnd(wx,sy,splash){
 function update(dt){
   bobT+=dt;auraT+=dt;
   const aim=mode==='aim',rev=revOf(aim?pw:0);
-  if(rev>0&&!th){phiSpin-=360*rev*dt;if(phiSpin<-720)phiSpin+=720}
+  if(rev>0&&!th){phiSpin+=360*rev*dt;if(phiSpin>720)phiSpin-=720}
   if(!th){
     const k=Math.min(1,dt*18),tC=(aim&&holdB)?1:0,tB=(aim&&!holdB&&pw>0)?1:0,tR=(aim&&(rev>0||holdB))?1:0;
     wC+=(tC-wC)*k;wB+=(tB-wB)*k;wR+=(tR-wR)*k;
@@ -911,7 +911,7 @@ function windArm(rev,phi){
     ctx.save();ctx.globalAlpha=al;ctx.translate(WARM.piv[0],WARM.piv[1]);ctx.rotate(-(a+90)*D2R);ctx.translate(-WARM.piv[0],-WARM.piv[1]);
     ctx.drawImage(g.im,0,0);if(poop)poopEm(WARM.fist[0],WARM.fist[1]);ctx.restore();
   };
-  if(rev>=2.5){const dl=7+rev*4;one(phi+dl*2,.18,false);one(phi+dl,.32,false)}   // 速いときは残像
+  if(rev>=2.5){const dl=7+rev*4;one(phi-dl*2,.18,false);one(phi-dl,.32,false)}   // 速いときは残像
   one(phi,1,true);
 }
 function RT(piv,deg,fn){ctx.save();ctx.translate(piv[0],piv[1]);ctx.rotate(deg*D2R);ctx.translate(-piv[0],-piv[1]);fn();ctx.restore()}
@@ -930,7 +930,6 @@ function drawView(v,x,y,sc){
   if(v.k==='aim'){
     ctx.translate(-AIMA[0],-AIMA[1]);
     const A=aimAng(v.thp),sh=aimPt(PV.armR,A);
-    ghosts(sh[0],sh[1],v.rev||0,phiSpin);
     dI('legs',GI.legs.ox,GI.legs.oy);
     RT(PV.belly,A.rb,function(){
       dI('belly',GI.belly.ox,GI.belly.oy);
