@@ -1731,7 +1731,7 @@ function draw(){
   if(amb){
     const vx=X(vg?0:RX);
     if(amb.t>=-0.8&&amb.t<0.6){em('💥',vx,GY-70,90);}
-    if(amb.t>=0){if(vg)em('💫',vx+62,GY+KO_DY-86,32);else em('💫',vx,GY-90,36)}
+    if(amb.t>=0){if(!vg)em('💫',vx,GY-90,36)}
     let ax=W+100,flip=false;
     if(amb.t>=0&&amb.t<2)ax=W+100+(vx+60-W-100)*(amb.t/2);
     else if(amb.t>=2&&amb.t<2.6)ax=vx+60;
