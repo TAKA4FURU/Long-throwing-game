@@ -48,9 +48,10 @@ body>#YTW{flex:none;margin:6px auto 4px}
   h1,body>p{display:none}
   html,body{overflow:hidden}
   body{padding:0;gap:0;justify-content:center;height:100vh;height:100dvh}
-  #GW{position:static;max-width:none;width:auto}
+  #GW{position:relative;max-width:none;width:100vw;height:100vh;height:100dvh;flex:none}
   canvas{width:100vw;height:100vh;height:100dvh;aspect-ratio:auto;max-width:none;border-radius:0;object-fit:contain;background:#000}
-  #GW #YTW{position:fixed;top:calc(6px + env(safe-area-inset-top,0px));right:max(6px,env(safe-area-inset-right,0px));z-index:6}
+  /* iPhoneでは、position:fixed の中のYouTube（iframe）がノッチの幅だけ右へずれて表示されるため、fixedを使わずに置く */
+  #GW #YTW{position:absolute;top:calc(6px + env(safe-area-inset-top,0px));right:max(6px,env(safe-area-inset-right,0px));z-index:6}
   #SET{position:fixed;top:calc(3px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);width:auto!important;max-width:40vw!important;gap:4px!important;flex-wrap:nowrap!important;z-index:5;opacity:.8}
   #SET button{padding:3px 6px!important;font-size:.6rem!important;white-space:nowrap}
   #SET label{font-size:0!important;gap:0!important}
