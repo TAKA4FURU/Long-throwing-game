@@ -39,9 +39,9 @@ p{font-size:.8rem;margin:0;opacity:.8;text-align:center}
   #SET label{font-size:0!important;gap:0!important}
   #SET input{width:56px!important}
   .row{position:fixed;left:0;right:0;bottom:calc(4px + env(safe-area-inset-bottom,0px));max-width:none;justify-content:space-between;align-items:flex-end;pointer-events:none;z-index:5;box-sizing:border-box;padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px))}
-  #T{flex:none;width:19vw;padding:13px 3px;font-size:.6rem;line-height:1.3;opacity:.6;pointer-events:auto;border-radius:10px}
-  #PW{flex:none;width:36vw;opacity:.6;pointer-events:auto}
-  .pw{padding:13px 1px;font-size:.58rem;border-radius:10px}
+  #T{flex:none;width:19vw;padding:36px 3px;font-size:.62rem;line-height:1.3;pointer-events:auto;border-radius:12px;background:rgba(224,86,43,.28);border:2px solid rgba(255,255,255,.95);text-shadow:0 1px 3px rgba(0,0,0,.85)}
+  #PW{flex:none;width:36vw;pointer-events:auto}
+  .pw{padding:35px 1px;font-size:.6rem;border-radius:12px;background:rgba(43,125,224,.28);border:2px solid rgba(255,255,255,.95);text-shadow:0 1px 3px rgba(0,0,0,.85)}
   body:not(.play) .row{display:none}
   body.noset #SET{display:none!important}
 }
@@ -52,6 +52,7 @@ p{font-size:.8rem;margin:0;opacity:.8;text-align:center}
 <div id="SET" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;width:100%;max-width:800px">
 <button id="M" style="flex:none;padding:6px 12px;font-size:.85rem;background:#666"></button>
 <button id="BG" style="flex:none;padding:6px 12px;font-size:.85rem;background:#666"></button>
+<button id="KB" style="flex:none;padding:6px 12px;font-size:.85rem;background:#8a3a3a;display:none">🏳️ 棄権</button>
 <button id="RB" style="flex:none;padding:6px 12px;font-size:.85rem;background:#666;display:none">🏆 ランキング</button>
 <label style="display:flex;align-items:center;gap:6px;font-size:.85rem">BGM音量 <input id="BV" type="range" min="0" max="100" value="60" style="width:130px"></label>
 </div>
@@ -61,7 +62,12 @@ p{font-size:.8rem;margin:0;opacity:.8;text-align:center}
   <button id="T">押して角度 → 離して投げる<br>（PC:スペース）</button>
   <div id="PW"><button class="pw" id="P1">パワー<br>(全キー)</button><button class="pw" id="P2">パワー<br>(全キー)</button><button class="pw" id="P3">パワー<br>(全キー)</button><button class="pw" id="P4">パワー<br>(全キー)</button></div>
 </div>
-<p>「Ready…」でタップ／キー → 「Throw it!」から10秒以内に発射！　パワー：スペース以外のキーを連打（スマホはパワーボタンをこすって連打）／なげる：スペースを押し続けて角度（短い＝0°、長い＝180°）→ 離すと発射。3投のうち一番遠くを競います</p>
+<p>「🏳️ 棄権」でその1投を記録なしにできます。　「Ready…」でタップ／キー → 「Throw it!」から10秒以内に発射！　パワー：スペース以外のキーを連打（スマホはパワーボタンをこすって連打）／なげる：スペースを押し続けて角度（短い＝0°、長い＝180°）→ 離すと発射。3投のうち一番遠くを競います</p>
+<div id="KK" class="ov" hidden><div class="card">
+<h3>🏳️ この1投を棄権しますか？</h3>
+<div>棄権すると、この1投は記録なし（「棄権」）になって次の投擲に進みます。</div>
+<div class="bt"><button id="KKok" style="background:#b03a3a">棄権する</button><button id="KKno" class="g">続ける</button></div>
+</div></div>
 <div id="NM" class="ov" hidden><div class="card">
 <h3>🏆 ランキングに載せますか？</h3>
 <div>今回の最長：<b id="NMd"></b></div>
@@ -99,7 +105,7 @@ addEventListener('resize',fit);addEventListener('orientationchange',()=>{setTime
 if(window.visualViewport)visualViewport.addEventListener('resize',fit);
 if(window.ResizeObserver)new ResizeObserver(fit).observe(cv);
 try{best=parseFloat(localStorage.getItem('gbest'))||0}catch(e){}
-function reset(){GFX.reset();comReset();bgmAt=0;bgmStarted=false;bgmNoLoop=false;S={state:'tap',rt:1.5,t:LIMIT,power:0,angle:0,holding:false,n:0,roll:null,rolled:false,res:[],angs:[],fl:[],lfoul:false,pos:[],rx:RX,rrun:false,go:0,ph:0,flash:0,fresh:false,ld:0,lx:0,p:null,cam:0,msg:'',msgT:0,wait:0,amb:null,fail:null}}
+function reset(){GFX.reset();comReset();bgmAt=0;bgmStarted=false;bgmNoLoop=false;S={state:'tap',rt:1.5,t:LIMIT,power:0,angle:0,holding:false,n:0,roll:null,rolled:false,res:[],angs:[],fl:[],kk:[],lfoul:false,pos:[],rx:RX,rrun:false,go:0,ph:0,flash:0,fresh:false,ld:0,lx:0,p:null,cam:0,msg:'',msgT:0,wait:0,amb:null,fail:null}}
 function mash(){if(modalOpen)return;if(S.state==='aim'){S.power+=7/1.5;uho(S.power)}}
 let muted=false;try{muted=localStorage.getItem('gmute')==='1'}catch(e){}
 let ac,out,noiseBuf;
@@ -424,7 +430,8 @@ function finishOver(){if(!S.fail&&S.rolled&&Math.max(...S.res)>=24000)startBonus
 function afterOver(){const d=bestValid();if(RANK_URL&&d>0)openNameEntry(d,finishOver);else finishOver()}
 const RB=document.getElementById('RB');
 RB.onclick=()=>{if(S.state==='tap'||S.state==='title')openRanking(null);RB.blur()};
-function rbShow(){const st_=S.state,bc=document.body.classList;bc.toggle('play',st_==='ready'||st_==='aim'||st_==='throw');bc.toggle('noset',st_==='over'||st_==='board'||st_==='bonus');const v=(RANK_URL&&!modalOpen&&(S.state==='tap'||S.state==='title'))?'':'none';if(RB.style.display!==v)RB.style.display=v}
+function rbShow(){const st_=S.state,bc=document.body.classList;bc.toggle('play',st_==='ready'||st_==='aim'||st_==='throw');bc.toggle('noset',st_==='over'||st_==='board'||st_==='bonus');{const KB=document.getElementById('KB'),kv=(!modalOpen&&(S.state==='ready'||S.state==='aim'))?'':'none';if(KB.style.display!==kv)KB.style.display=kv}
+const v=(RANK_URL&&!modalOpen&&(S.state==='tap'||S.state==='title'))?'':'none';if(RB.style.display!==v)RB.style.display=v}
 function afterThrow(){
   if(S.n>=N){S.state='over';endNormal()}else{S.state='ready';S.p=null;S.t=LIMIT;S.rx=RX;S.rrun=false;S.cam=0;whistle(0.12)}
 }
@@ -446,6 +453,18 @@ function land(){
   comLand(fresh,d,S.p.ang>90);
   S.state='run';
 }
+// 棄権：この1投を記録なし（「棄権」）にして次へ
+function forfeit(){
+  if(S.state!=='ready'&&S.state!=='aim')return;
+  if(S.n===N-1)bgmNoLoopSet();
+  S.gf=true;S.holding=false;S.power=0;angSnd(-1);
+  S.res.push(0);S.angs.push(null);S.fl.push(true);S.kk[S.n]=true;S.lastAng=null;S.pos.push(null);S.n++;
+  buzz();S.msg='棄権';S.msgT=1.5;S.state='wait';S.wait=1.5;
+}
+{const KB=document.getElementById('KB'),KK=document.getElementById('KK');
+ KB.addEventListener('click',e=>{e.stopPropagation();KB.blur();if(S.state!=='ready'&&S.state!=='aim')return;S.holding=false;angSnd(-1);showModal(KK)});
+ document.getElementById('KKok').addEventListener('click',e=>{e.stopPropagation();hideModal(KK);forfeit()});
+ document.getElementById('KKno').addEventListener('click',e=>{e.stopPropagation();hideModal(KK)});}
 function foul(){
   if(S.n===N-1)bgmNoLoopSet();
   S.gf=!S.holding||S.angle<=90;
@@ -461,7 +480,7 @@ function update(dt){
   GFX.set(st==='aim'?'aim':(st==='ready'||st==='wait'||st==='tap'||st==='title')?'idle':'rest',S.power,S.holding,S.angle);GFX.update(dt);
   if(st==='ready'){S.cam+=(0-S.cam)*Math.min(1,dt*5)}
   else if(st==='aim'){
-    S.t-=dt;S.go-=dt;
+    if(!modalOpen){S.t-=dt;S.go-=dt}
     S.power=Math.max(0,S.power-15*dt);
     if(S.holding)S.angle=Math.min(180,S.angle+90*dt);
     angSnd(S.holding?S.angle:-1);
@@ -591,6 +610,7 @@ function comRelease(p,pw){
   if(a>90){const l=pick(SPC.foul);say(l[0],l[1],true);say('g',pick(SPC.foulG),true);return}
   const tr=pw<50?0:pw<150?1:pw<500?2:pw<1000?3:4;
   say('a',pick(REL[tr].a),true);
+  if(prev&&S.kk[i-1]&&chance(.8)){say('g',pick(['さっきは棄権したウホ。気持ちを切り替えるウホ。','棄権からの復活ウホ！','仕切り直しウホ。']),false,'ev');return}
   if(prev&&prev.a==null&&chance(.8)){say('g',pick(PREV.timeout),false,'ev');return}
   if(prev&&prev.f&&prev.a!=null&&chance(.7)){say('g',pick(PREV.foulBefore),false,'ev');return}
   if(tr===0||tr===4||chance(.25)){say('g',pick(REL[tr].g),false,'ev');return}
@@ -1775,7 +1795,7 @@ function draw(){
   ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.strokeRect(16,64,220,14);
   txt('P'+Math.round(disp),244,76,14,'#fff');
   ctx.fillStyle='rgba(0,0,0,.45)';ctx.fillRect(8,112,200,78);
-  [0,1,2].forEach(i=>{const d=S.res[i];txt((i+1)+'投目 '+(d!==undefined?(S.fl[i]?'FOUL ':d.toFixed(1)+'m ')+(S.angs[i]!=null?S.angs[i]+'°':'時間切れ'):'--'),16,134+i*22,16,'#fff')});
+  [0,1,2].forEach(i=>{const d=S.res[i];txt((i+1)+'投目 '+(d!==undefined?(S.kk[i]?'棄権':(S.fl[i]?'FOUL ':d.toFixed(1)+'m ')+(S.angs[i]!=null?S.angs[i]+'°':'時間切れ')):'--'),16,134+i*22,16,'#fff')});
   ctx.restore();
   if(S.state==='aim'){
     ctx.fillStyle='rgba(0,0,0,.45)';ctx.fillRect(W-150-SR,8,142,52);
@@ -1803,7 +1823,7 @@ function draw(){
     }else{
       txt('結果発表！',400,50,40,'#fff','center');
       txt('合計 '+tot.toFixed(1)+' m',400,102,44,'#ffd23f','center');
-      txt(S.res.map((d,i)=>(i+1)+'投目 '+(S.fl[i]?'FOUL':d.toFixed(1)+'m')+(S.angs[i]!=null?'('+S.angs[i]+'°)':'')).join('　'),400,134,18,'#fff','center');
+      txt(S.res.map((d,i)=>(i+1)+'投目 '+(S.kk[i]?'棄権':(S.fl[i]?'FOUL':d.toFixed(1)+'m')+(S.angs[i]!=null?'('+S.angs[i]+'°)':''))).join('　'),400,134,18,'#fff','center');
       drawComment(S.cmt||'',160);
     }
     txt('自己ベスト（1投） '+best.toFixed(1)+' m',400,395,20,'#fff','center');
