@@ -51,6 +51,8 @@ body>#YTW{flex:none;margin:6px auto 4px}
   #GW{position:relative;max-width:none;width:100vw;height:100vh;height:100dvh;flex:none}
   canvas{width:100vw;height:100vh;height:100dvh;aspect-ratio:auto;max-width:none;border-radius:0;object-fit:contain;background:#000}
   /* iPhoneでは、position:fixed の中のYouTube（iframe）がノッチの幅だけ右へずれて表示されるため、fixedを使わずに置く */
+  html.ios #GW #YTW{overflow:hidden}
+  html.ios #YTW iframe{position:relative;left:calc(-1 * env(safe-area-inset-left,0px))}
   #GW #YTW{position:absolute;top:calc(6px + env(safe-area-inset-top,0px));right:max(6px,env(safe-area-inset-right,0px));z-index:6}
   #SET{position:fixed;top:calc(3px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);width:auto!important;max-width:40vw!important;gap:4px!important;flex-wrap:nowrap!important;z-index:5;opacity:.8}
   #SET button{padding:3px 6px!important;font-size:.6rem!important;white-space:nowrap}
@@ -360,8 +362,8 @@ BG.addEventListener('click',()=>{bgmOn=!bgmOn;try{localStorage.setItem('gbgm',bg
 BV.addEventListener('input',()=>{bgmVol=BV.value/100;try{localStorage.setItem('gbgmv',bgmVol)}catch(e){}bgmApply();ytVol()});
 BV.addEventListener('change',()=>BV.blur());
 bglabel();
-// iPhone・iPadではページから音量を変えられないので、音量バーを出さない
-if(/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)){const L=document.getElementById('BVL');if(L)L.style.display='none'}
+// iPhone・iPadではページから音量を変えられないので、音量バーを出さない（横画面のYouTubeのずれ補正にも使う）
+if(/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)){document.documentElement.classList.add('ios');const L=document.getElementById('BVL');if(L)L.style.display='none'}
 {const HB=document.getElementById('HB'),HP=document.getElementById('HP');
  HB.addEventListener('click',e=>{e.stopPropagation();HB.blur();showModal(HP)});
  document.getElementById('HPcl').addEventListener('click',e=>{e.stopPropagation();hideModal(HP)});}
@@ -622,19 +624,20 @@ function say(who,t,pri,kind){
   const now=performance.now()/1000;
   if(kind==='sc'||pri){
     COM.q=COM.q.filter(x=>x.kind==='ev'&&!(kind==='sc'&&x.grp==='sc'));
-    if(COM.cur&&COM.cur.kind!=='ev'&&COM.cur.t>0.5)COM.cur.dur=Math.min(COM.cur.dur,COM.cur.t+0.2);
+    if(COM.cur&&COM.cur.kind!=='ev')COM.cur.dur=Math.min(COM.cur.dur,COM.cur.t+(kind==='sc'?Math.max(0.15,0.9-COM.cur.t):0.2));
   }
   if(COM.q.length>=4)COM.q.shift();
   COM.q.push({who,s:t,pri:!!pri,kind,grp:kind,ts:now});
 }
-function sayS(a,g){say('a',a,false,'sc');if(g){say('g',g,false,'sc');COM.q[COM.q.length-1].kind='sc2'}}
+// 景色の話：実況は必ず、解説の一言は半分くらいの確率で（実況：解説 ≒ 2：1）
+function sayS(a,g){say('a',a,false,'sc');if(g&&Math.random()<0.45){say('g',g,false,'sc');COM.q[COM.q.length-1].kind='sc2'}}
 function say2(a,g,pri){if(a)say('a',a,pri);if(g)say('g',g,pri)}
 function comUpdate(dt){
   if(COM.cur){COM.cur.t+=dt;if(COM.cur.t>=COM.cur.dur)COM.cur=null}
   const now=performance.now()/1000;
   while(!COM.cur&&COM.q.length){
     const c=COM.q.shift();
-    if((c.kind==='sc'&&now-c.ts>1.0)||(c.kind==='sc2'&&now-c.ts>4)||(c.kind==='fl'&&now-c.ts>2)||(c.kind==='dl'&&now-c.ts>14))continue;   // 画面に追いつけない古い話題は飛ばす
+    if((c.kind==='sc'&&now-c.ts>2.0)||(c.kind==='sc2'&&now-c.ts>4)||(c.kind==='fl'&&now-c.ts>2)||(c.kind==='dl'&&now-c.ts>14))continue;   // 画面に追いつけない古い話題は飛ばす
     c.t=0;c.dur=1.3+[...c.s].length*0.065;COM.cur=c;COM.idle=0;
   }
   if(!COM.cur&&!COM.q.length)COM.idle+=dt;
@@ -697,6 +700,7 @@ function comRelease(p,pw){
   if(a>90){const l=pick(SPC.foul);say(l[0],l[1],true);say('g',pick(SPC.foulG),true);return}
   const tr=pw<50?0:pw<150?1:pw<500?2:pw<1000?3:4;
   say('a',pick(REL[tr].a),true);
+  if(!chance(.6))return;   // 解説の一言は6割くらい
   if(prev&&S.kk[i-1]&&chance(.8)){say('g',pick(['さっきは棄権したウホ。気持ちを切り替えるウホ。','棄権からの復活ウホ！','仕切り直しウホ。']),false,'ev');return}
   if(prev&&prev.a==null&&chance(.8)){say('g',pick(PREV.timeout),false,'ev');return}
   if(prev&&prev.f&&prev.a!=null&&chance(.7)){say('g',pick(PREV.foulBefore),false,'ev');return}
@@ -845,7 +849,7 @@ function filler(d){
   if(r<0.03){dlg(pick(RARE),'dl');return}
   if(r<0.28){dlg(pick(DLG),'dl');return}
   const zone=d<300?'stadium':d<1001||(d>=6000&&d<7001)||(d>=8001&&d<9001)||(d>=11001&&d<12001)||(d>=25000&&d<26000)||(d>=28501&&d<31000)?'city':(d>=13000&&d<14001)||(d>=20001&&d<21001)||(d>=23001&&d<24501)||(d>=27001&&d<28501)||(d>=44001&&d<47001)?'sea':d>=BAN?'banana':(d>=56500&&d<75500)?'desert':(d>=75500&&d<95000)?'savanna':'nature';
-  const useZone=chance(.6),who=chance(.5)?'a':'g';
+  const useZone=chance(.6),who=chance(.68)?'a':'g';
   const arr=useZone?FILL[zone+(who==='g'?'G':'')]:FILL[who==='g'?'anyG':'any'];
   say(who,pick(arr),false,'fl');
 }
@@ -1428,10 +1432,19 @@ function drawView(v,x,y,sc){
   }else{
     const P=POSE[v.k];
     if(P.k)ctx.scale(P.k,P.k);
-    ctx.translate(-P.ax,-P.by+(v.bob?2:0));
-    if(v.k==='wind')windArm(v.rev||0,v.rev>0?phiSpin:-90);
-    dI(P.img||v.k,0,0);
-    if(v.hold&&P.ball)poopEm(P.ball[0],P.ball[1]);
+    ctx.translate(-P.ax,-P.by);
+    if(v.k==='idle'){   // 待機：下半身は固定、胸から上だけがゆっくり呼吸する
+      const g=GI.idle,SPL=160,cx=g.w/2,a=0.022*(0.5-0.5*Math.cos(performance.now()/1000*Math.PI*2/2.6));
+      if(g.im.complete&&g.im.naturalWidth){
+        ctx.drawImage(g.im,0,SPL,g.w,g.h-SPL,0,SPL,g.w,g.h-SPL);
+        ctx.save();ctx.translate(cx,SPL+1);ctx.scale(1+a*0.45,1+a);ctx.drawImage(g.im,0,0,g.w,SPL+1,-cx,-SPL-1,g.w,SPL+1);ctx.restore();
+      }
+      if(v.hold&&P.ball)poopEm(cx+(P.ball[0]-cx)*(1+a*0.45),SPL+1-(SPL+1-P.ball[1])*(1+a));
+    }else{
+      if(v.k==='wind')windArm(v.rev||0,v.rev>0?phiSpin:-90);
+      dI(P.img||v.k,0,0);
+      if(v.hold&&P.ball)poopEm(P.ball[0],P.ball[1]);
+    }
   }
   ctx.restore();
 }
@@ -1802,7 +1815,7 @@ function drawTap(){
   em('💩',520+Math.sin(t*2)*10,115+Math.sin(t*3)*8,44,t*2);
   if(Math.floor(t*2)%2===0)otxt('タップしてスタート',400,320,44);
   txt('Produced by the Yaoyorozu Brothers',400,420,16,'#bbb','center');
-  txt('バージョン2.0.0',400,442,13,'#999','center');
+  txt('バージョン2.0.4',400,442,13,'#999','center');
 }
 function draw(){
   if(isPr(S.state)){drawPractice();return}
@@ -2027,7 +2040,7 @@ function drawTitle(){
   em('🧍‍♂️',600,330,100);
   otxt('ゴリラのウホ投げ',400,100,66);
   otxt('選手権',400,165,50);
-  txt('バージョン2.0.0',400,190,15,'#2b2118','center');
+  txt('バージョン2.0.4',400,190,15,'#2b2118','center');
   txt('自己ベスト '+best.toFixed(1)+' m',400,215,24,'#2b2118','center');
   uiBtn(150,372,240,58,'🏆 競技モード','t_comp',{bg:'#e0562b',fs:24,line:'#fff'});
   uiBtn(410,372,240,58,'🩺 練習モード','t_prac',{bg:'#2b7de0',fs:24,line:'#fff'});
@@ -2077,7 +2090,7 @@ function tierPick(tbl,x){for(const r of tbl)if(x<r[0])return r[1];return tbl[tbl
 // ---- 状態 ----
 let P_={mode:null,doc:{s:'',t:0}};
 function pNew(mode){
-  P_={mode,started:false,t:0,power:0,peak:0,taps:0,tapT:[],samples:[{t:0,p:0}],sAcc:0,holding:false,angle:0,res:null,hist:(P_&&P_.mode===mode&&P_.hist)?P_.hist:[],doc:{s:'',t:0},thrown:false};
+  P_={splat:false,hitFx:null,toRes:0,mode,started:false,t:0,power:0,peak:0,taps:0,tapT:[],samples:[{t:0,p:0}],sAcc:0,holding:false,angle:0,res:null,hist:(P_&&P_.mode===mode&&P_.hist)?P_.hist:[],doc:{s:'',t:0},thrown:false};
 }
 function goPractice(){S.state='p_menu';pNew(null);bgmPractice();docSay(DOC.menu);whistle(0.12)}
 function pStart(mode){
@@ -2100,7 +2113,7 @@ function pMash(){
   if(!P_.started){P_.started=true;P_.t=0;if(st==='p_pow')docSay(DOC.powGo)}
   P_.power+=7/1.5;P_.taps++;P_.tapT.push(P_.t);if(P_.power>P_.peak)P_.peak=P_.power;uho(P_.power);
 }
-function pDown(){const st=S.state;if((st==='p_ang'||st==='p_all')&&!P_.res&&!P_.holding){P_.holding=true;P_.angle=0}}
+function pDown(){const st=S.state;if((st==='p_ang'||st==='p_all'||st==='p_pow')&&!P_.res&&!P_.holding){P_.holding=true;P_.angle=0}}
 function pUp(){
   const st=S.state;if(!P_.holding)return;P_.holding=false;
   if(st==='p_ang'){
@@ -2109,6 +2122,7 @@ function pUp(){
     if(ok){tone(1319,1319,0.18,'sine',0.22);tone(1047,1047,0.45,'sine',0.22,0.16);docSay(DOC.angHit)}
     else{tone(523,523,0.22,'sine',0.2);docSay(d<=3?DOC.angNear:a<45?DOC.angLow:DOC.angHigh,{a,d})}
   }else if(st==='p_all'){pFinishAll(false)}
+  else if(st==='p_pow'){pThrowPow()}
 }
 function pFinishAll(timeout){
   const pw=P_.power,ang=P_.angle,a=Math.round(ang);
@@ -2122,9 +2136,29 @@ function pFinishAll(timeout){
     else if(ang>90)r.kind='foul';
     else{const vx=v*Math.cos(rad),vy=-v*Math.sin(rad),T=(-vy+Math.sqrt(vy*vy+2*G*70))/G;r.d=Math.max(0,vx*T/SC)}
     shoutCry();GFX.start(pw,ang,()=>{});P_.thrown=true;
+    if(pw>=100&&a<=5){r.kind='doc';r.d=0;P_.res=r;P_.power=0;P_.hitFx={t:0,splat:false};P_.toRes=1.6;return}   // 隠し要素：女医に直撃
   }
   P_.res=r;P_.power=0;S.state='p_res';
   const k=r.kind;docSay(k==='d'?tierPick(DOC.allR.d,r.d):DOC.allR[k]);
+}
+// 飛距離の計算（競技と同じ）
+function pDist(pw,ang){
+  const v=Math.max(pw,3)*0.4*SC,rad=ang*Math.PI/180;
+  if(pw>=100&&Math.abs(ang-90)<=2)return {kind:'self',d:0};
+  if(pw>=100&&ang>=180)return {kind:'ref',d:0};
+  if(ang>90)return {kind:'foul',d:0};
+  const vx=v*Math.cos(rad),vy=-v*Math.sin(rad),T=(-vy+Math.sqrt(vy*vy+2*G*70))/G;return {kind:'d',d:Math.max(0,vx*T/SC)};
+}
+const DOC_ANGRY=['ちょっと！！私に向かって投げないでください！','白衣が台無しです！クリーニング代を請求します！','……今のは、わざとですね？','医療事故です！！反省してください！','カルテに「危険人物」と書いておきます。'];
+// パワー練習の途中で投げる（パワー100以上・角度0〜5°だと女医に直撃）
+function pThrowPow(){
+  const pw=P_.power,a=Math.round(P_.angle),hit=pw>=100&&a<=5;
+  const r={final:pw,peak:P_.peak,taps:P_.taps,samples:P_.samples.slice(),tapT:P_.tapT.slice(),time:Math.min(10,P_.t),thrown:true,ang:a,doc:hit};
+  r.samples.push({t:r.time,p:pw});
+  const dd=pDist(pw,a);r.kind=hit?'doc':dd.kind;r.d=dd.d;
+  shoutCry();GFX.start(pw,a,()=>{});P_.thrown=true;P_.res=r;P_.power=0;
+  if(hit){P_.hitFx={t:0,splat:false};P_.toRes=1.6}
+  else{S.state='p_res';docSay(r.kind==='d'?tierPick(DOC.allR.d,r.d):DOC.allR[r.kind])}
 }
 function pFinishPow(){
   const r={final:P_.power,peak:P_.peak,taps:P_.taps,samples:P_.samples.slice(),tapT:P_.tapT.slice(),time:10};
@@ -2141,10 +2175,12 @@ function pUpdate(dt){
       if(P_.t>=10){if(st==='p_pow')pFinishPow();else pFinishAll(true)}
     }
   }
+  if(P_.hitFx){const h=P_.hitFx;h.t+=dt;if(!h.splat&&h.t>=0.62){h.splat=true;P_.splat=true;splat();noise(0.25,900,0.6,0.6,0.02,0.004);docSay(DOC_ANGRY)}}
+  if(P_.toRes>0){P_.toRes-=dt;if(P_.toRes<=0){P_.toRes=0;S.state='p_res'}}
   if(P_.holding)P_.angle=Math.min(180,P_.angle+90*dt);
   angSnd(P_.holding?P_.angle:-1);
-  const aimy=(st==='p_pow'||st==='p_ang'||st==='p_all');
-  GFX.set(aimy?'aim':(st==='p_res'&&P_.thrown)?'rest':'idle',st==='p_ang'?0:P_.power,P_.holding,P_.angle);GFX.update(dt);
+  const aimy=(st==='p_pow'||st==='p_ang'||st==='p_all')&&!P_.thrown;
+  GFX.set(aimy?'aim':P_.thrown?'rest':'idle',st==='p_ang'?0:P_.power,P_.holding,P_.angle);GFX.update(dt);
 }
 // ---- 描画 ----
 function docX(){const st=S.state;if(st==='p_pow'||st==='p_ang'||st==='p_all')return GXp()+165;return (ytOv()?W-YTR-SR-70:W-SR-120)}
@@ -2154,7 +2190,14 @@ function drawDoctor(){
   const k=DOC_K,w=DOC_W*k,h=DOC_H*k,x=docX();
   ctx.save();ctx.imageSmoothingEnabled=true;
   ctx.fillStyle='rgba(0,0,0,.08)';ctx.beginPath();ctx.ellipse(x,GY+2,30,5,0,0,7);ctx.fill();
-  ctx.drawImage(DOC_IMG,x-w/2,GY+4-h,w,h);ctx.restore();
+  const sh=(P_.hitFx&&P_.hitFx.splat&&P_.hitFx.t<1.3)?Math.round((Math.random()-.5)*4):0;
+  ctx.drawImage(DOC_IMG,x-w/2+sh,GY+4-h,w,h);ctx.restore();
+  if(P_.splat){em('💩',x+sh,GY+4-h*0.62,22);const pul=1+0.12*Math.sin(performance.now()/90);em('💢',x+16+sh,GY-h-2,18*pul)}
+  // 女医めがけて飛んでいくうんこ
+  if(P_.hitFx&&!P_.hitFx.splat&&P_.hitFx.t>0.3){
+    const u=Math.min(1,(P_.hitFx.t-0.3)/0.32),x0=GXp()+60,y0=GY-120,x1=x,y1=GY+4-h*0.62;
+    em('💩',x0+(x1-x0)*u,y0+(y1-y0)*u,26,u*12);
+  }
 }
 function bubble(s,x,y,maxW,tailX){
   ctx.font='bold 16px system-ui,sans-serif';
@@ -2260,17 +2303,19 @@ function drawPractice(){
     txt(all?'③ 総合練習の結果':'① パワー練習の結果',L+10,46,22,'#2b2118');
     let y=80;
     if(all){
-      const k=r.kind,dist=k==='d'?(r.d>=1000?r.d.toLocaleString(undefined,{maximumFractionDigits:1}):r.d.toFixed(1))+' m':k==='foul'?'FOUL':k==='self'?'自分に直撃！':k==='ref'?'審判に直撃！':'時間切れ';
+      const k=r.kind,dist=k==='d'?(r.d>=1000?r.d.toLocaleString(undefined,{maximumFractionDigits:1}):r.d.toFixed(1))+' m':k==='foul'?'FOUL':k==='self'?'自分に直撃！':k==='ref'?'審判に直撃！':k==='doc'?'ドクター直撃！':'時間切れ';
       txt('到達距離',L+10,y,15,'#666');txt(dist,L+10,y+34,34,k==='d'?'#e0562b':'#e0262b');
       txt('角度',L+250,y,15,'#666');txt(r.ang==null?'--':r.ang+'°',L+250,y+34,30,'#2b2118');
       y+=56;
       txt('投げた時のパワー '+Math.round(r.pw)+'　最大 '+Math.round(r.peak)+'　連打 '+r.taps+'回　'+r.time.toFixed(1)+'秒',L+10,y,15,'#2b2118');
     }else{
-      txt('10秒後のパワー',L+10,y,15,'#666');txt(String(Math.round(r.final)),L+10,y+36,38,'#e0262b');
+      txt(r.thrown?'投げた時のパワー':'10秒後のパワー',L+10,y,15,'#666');txt(String(Math.round(r.final)),L+10,y+36,38,'#e0262b');
       txt('最大パワー',L+170,y,15,'#666');txt(String(Math.round(r.peak)),L+170,y+36,30,'#2b2118');
       txt('連打回数',L+320,y,15,'#666');txt(r.taps+' 回',L+320,y+36,30,'#2b2118');
       y+=56;
-      txt('（バーのMAX＝100。1秒あたり '+(r.taps/10).toFixed(1)+' 回）',L+10,y,14,'#666');
+      if(r.thrown){const k=r.kind,res=k==='doc'?'ドクター直撃！（ベチョ！）':k==='d'?(r.d>=1000?r.d.toLocaleString(undefined,{maximumFractionDigits:1}):r.d.toFixed(1))+' m':k==='foul'?'FOUL':k==='self'?'自分に直撃！':'審判に直撃！';
+        txt(r.time.toFixed(1)+'秒で投擲　角度 '+r.ang+'°　→ ',L+10,y,15,'#2b2118');ctx.font='bold 15px system-ui,sans-serif';const ww=ctx.measureText(r.time.toFixed(1)+'秒で投擲　角度 '+r.ang+'°　→ ').width;txt(res,L+10+ww,y,17,k==='d'?'#e0562b':'#e0262b')}
+      else txt('（バーのMAX＝100。1秒あたり '+(r.taps/10).toFixed(1)+' 回）',L+10,y,14,'#666');
     }
     drawGraph(L+34,y+26,pw-80,150,r);
     const by=y+210,bw=(pw-36)/3;
