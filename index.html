@@ -2,7 +2,8 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" id="VP" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>/* テスト用：「?vf=0」で画面いっぱい表示（ノッチの下まで広げる設定）をやめる。iPhone横画面のYouTubeずれの確認用 */try{if(new URLSearchParams(location.search).get("vf")==="0")document.getElementById("VP").setAttribute("content","width=device-width, initial-scale=1")}catch(e){}</script>
 <title>ゴリラのウホ投げ選手権</title>
 <style>
 :root{--bg:#f4efe6;--fg:#2b2118;--a:#e0562b;--b:#2b7de0;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -48,11 +49,10 @@ body>#YTW{flex:none;margin:6px auto 4px}
   h1,body>p{display:none}
   html,body{overflow:hidden}
   body{padding:0;gap:0;justify-content:center;height:100vh;height:100dvh}
+  body{background:#000}
   #GW{position:relative;max-width:none;width:100vw;height:100vh;height:100dvh;flex:none}
   canvas{width:100vw;height:100vh;height:100dvh;aspect-ratio:auto;max-width:none;border-radius:0;object-fit:contain;background:#000}
   /* iPhoneでは、position:fixed の中のYouTube（iframe）がノッチの幅だけ右へずれて表示されるため、fixedを使わずに置く */
-  html.ios #GW #YTW{overflow:hidden}
-  html.ios #YTW iframe{position:relative;left:calc(-1 * env(safe-area-inset-left,0px))}
   #GW #YTW{position:absolute;top:calc(6px + env(safe-area-inset-top,0px));right:max(6px,env(safe-area-inset-right,0px));z-index:6}
   #SET{position:fixed;top:calc(3px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);width:auto!important;max-width:40vw!important;gap:4px!important;flex-wrap:nowrap!important;z-index:5;opacity:.8}
   #SET button{padding:3px 6px!important;font-size:.6rem!important;white-space:nowrap}
@@ -1815,7 +1815,7 @@ function drawTap(){
   em('💩',520+Math.sin(t*2)*10,115+Math.sin(t*3)*8,44,t*2);
   if(Math.floor(t*2)%2===0)otxt('タップしてスタート',400,320,44);
   txt('Produced by the Yaoyorozu Brothers',400,420,16,'#bbb','center');
-  txt('バージョン2.0.4',400,442,13,'#999','center');
+  txt('バージョン2.0.6',400,442,13,'#999','center');
 }
 function draw(){
   if(isPr(S.state)){drawPractice();return}
@@ -2040,7 +2040,7 @@ function drawTitle(){
   em('🧍‍♂️',600,330,100);
   otxt('ゴリラのウホ投げ',400,100,66);
   otxt('選手権',400,165,50);
-  txt('バージョン2.0.4',400,190,15,'#2b2118','center');
+  txt('バージョン2.0.6',400,190,15,'#2b2118','center');
   txt('自己ベスト '+best.toFixed(1)+' m',400,215,24,'#2b2118','center');
   uiBtn(150,372,240,58,'🏆 競技モード','t_comp',{bg:'#e0562b',fs:24,line:'#fff'});
   uiBtn(410,372,240,58,'🩺 練習モード','t_prac',{bg:'#2b7de0',fs:24,line:'#fff'});
