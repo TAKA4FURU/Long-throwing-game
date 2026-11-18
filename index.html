@@ -2,8 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" id="VP" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<script>/* テスト用：「?vf=0」で画面いっぱい表示（ノッチの下まで広げる設定）をやめる。iPhone横画面のYouTubeずれの確認用 */try{if(new URLSearchParams(location.search).get("vf")==="0")document.getElementById("VP").setAttribute("content","width=device-width, initial-scale=1")}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ゴリラのウホ投げ選手権</title>
 <style>
 :root{--bg:#f4efe6;--fg:#2b2118;--a:#e0562b;--b:#2b7de0;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -319,7 +318,7 @@ function trkStop(k){
 }
 function bgmApply(){Object.keys(TRK).forEach(k=>{const t=TRK[k];if(t.gain)t.gain.gain.setTargetAtTime(bgmLevel(),ac.currentTime,0.05)})}
 // ===== YouTubeでBGMを流す（タイトル曲・競技中の曲）。再生できないときはBGMなしで続ける =====
-const YTV={title:{id:'C1VqxvhmxwA',s:12},game:{id:'3vyI1aPSUmE',s:1},practice:{id:'8QlsFBOqXWM',s:58}};
+const YTV={title:{id:'C1VqxvhmxwA',s:12},game:{id:'3vyI1aPSUmE',s:1},practice:{id:'8QlsFBOqXWM',s:58.5}};
 let ytP=null,ytReady=false,ytOK=true,ytCur=null,YTR=216;
 const YTW=document.getElementById('YTW'),GW=document.getElementById('GW');
 function narrow(){return !(LAND&&LAND.matches)&&innerWidth<700}
@@ -1699,8 +1698,8 @@ function bubbleAt(t,bx,by){
 function drawBoard(){
   const t=performance.now()/1000;
   const g=ctx.createLinearGradient(0,0,0,450);g.addColorStop(0,'#0a0f1f');g.addColorStop(1,'#1b2440');
-  ctx.fillStyle=g;ctx.fillRect(-CX,0,W,450);
-  for(let i=-1;i<6;i++)circ('rgba(255,255,220,.85)',90+i*155,26,9);
+  ctx.fillStyle=g;ctx.fillRect(-CX-800,-400,W+1600,1300);
+  for(let i=-6;i<12;i++)circ('rgba(255,255,220,.85)',90+i*155,26,9);
   const hyp=S.fresh&&!S.lfoul;
   ctx.fillStyle='#222';ctx.fillRect(90,48,620,250);
   ctx.strokeStyle='#888';ctx.lineWidth=8;ctx.strokeRect(90,48,620,250);
@@ -1712,9 +1711,9 @@ function drawBoard(){
   else txt('BEST '+best.toFixed(1)+' m',400,265,24,'#8aa0a0','center');
   const cols=['#e84a4a','#f5c542','#4a8ee8','#ffffff','#3fb86a','#f08ad0'];
   const k=Math.min(1,0.3+S.ld/150);
-  for(let j=0;j<3;j++)for(let c=-6;c<32;c++){
+  for(let j=0;j<6;j++)for(let c=-24;c<50;c++){
     const x=c*32+16+(j%2)*12,y=350+j*34+Math.sin(t*8+c*1.7+j)*(3+4*k);
-    ctx.fillStyle=cols[(c*7+j*3)%cols.length];ctx.beginPath();ctx.arc(x,y+14,13,0,7);ctx.fill();
+    ctx.fillStyle=cols[((c*7+j*3)%cols.length+cols.length)%cols.length];ctx.beginPath();ctx.arc(x,y+14,13,0,7);ctx.fill();
     circ('#f1c9a0',x,y-2,9);
     ctx.strokeStyle='#f1c9a0';ctx.lineWidth=3;ctx.beginPath();
     const u=Math.sin(t*9+c)*0.5+0.5;
@@ -1815,7 +1814,7 @@ function drawTap(){
   em('💩',520+Math.sin(t*2)*10,115+Math.sin(t*3)*8,44,t*2);
   if(Math.floor(t*2)%2===0)otxt('タップしてスタート',400,320,44);
   txt('Produced by the Yaoyorozu Brothers',400,420,16,'#bbb','center');
-  txt('バージョン2.0.6',400,442,13,'#999','center');
+  txt('バージョン2.0.7',400,442,13,'#999','center');
 }
 function draw(){
   if(isPr(S.state)){drawPractice();return}
@@ -2040,7 +2039,7 @@ function drawTitle(){
   em('🧍‍♂️',600,330,100);
   otxt('ゴリラのウホ投げ',400,100,66);
   otxt('選手権',400,165,50);
-  txt('バージョン2.0.6',400,190,15,'#2b2118','center');
+  txt('バージョン2.0.7',400,190,15,'#2b2118','center');
   txt('自己ベスト '+best.toFixed(1)+' m',400,215,24,'#2b2118','center');
   uiBtn(150,372,240,58,'🏆 競技モード','t_comp',{bg:'#e0562b',fs:24,line:'#fff'});
   uiBtn(410,372,240,58,'🩺 練習モード','t_prac',{bg:'#2b7de0',fs:24,line:'#fff'});
