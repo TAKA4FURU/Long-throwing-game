@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ゴリラのウホ投げ選手権</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@900&text=%E3%82%B4%E3%83%AA%E3%83%A9%E3%81%AE%E3%82%A6%E3%83%9B%E6%8A%95%E3%81%92%E9%81%B8%E6%89%8B%E6%A8%A9&display=swap">
 <style>
 :root{--bg:#f4efe6;--fg:#2b2118;--a:#e0562b;--b:#2b7de0;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1c1713;--fg:#f4efe6;color-scheme:dark}}
@@ -11,6 +13,7 @@
 html,body{margin:0;height:100%}
 body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;display:flex;flex-direction:column;align-items:center;gap:10px;padding:8px;box-sizing:border-box;user-select:none;-webkit-user-select:none;touch-action:manipulation}
 h1{font-size:1.1rem;margin:4px 0 0}
+h1 .tf{font-family:"M PLUS Rounded 1c",system-ui,sans-serif;font-weight:900}
 canvas{width:100%;max-width:800px;aspect-ratio:16/9;border-radius:10px;background:#7cc4f5}
 .row{display:flex;gap:12px;width:100%;max-width:800px}
 button{flex:1;padding:18px 8px;font-size:1.05rem;font-weight:700;color:#fff;border:0;border-radius:14px;touch-action:none}
@@ -72,7 +75,7 @@ body>#YTW{flex:none;margin:6px auto 4px}
 </style>
 </head>
 <body>
-<h1>🦍 ゴリラのウホ投げ選手権 💩</h1>
+<h1>🦍 <span class="tf">ゴリラのウホ投げ選手権</span> 💩</h1>
 <div id="SET" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;width:100%;max-width:800px">
 <button id="M" style="flex:none;padding:6px 12px;font-size:.85rem;background:#666"></button>
 <button id="BG" style="flex:none;padding:6px 12px;font-size:.85rem;background:#666"></button>
@@ -548,7 +551,9 @@ function bestValid(){let m=0;S.res.forEach((d,i)=>{if(!S.fl[i]&&d>m)m=d});return
 // 結果のあと：再挑戦（すぐ第1投の「Ready…」へ）か、最初（タップしてスタート）へ
 let NEXT='top';
 function goNext(){const r=NEXT==='retry';NEXT='top';reset();if(r){S.state='ready';bgmStop();whistle(0.12)}}
-function finishOver(){if(!S.fail&&S.rolled&&Math.max(...S.res)>=24000)startBonus();else goNext()}
+// 表彰台ゴリラ：今回の1投最長が、ランキング3位（自分の登録記録は除く）を超えたら。登録が3人未満なら超えた扱い。ランキングが取れないときは出さない
+function podiumOK(){const d=bestValid();if(!RANK_URL||!RANK_OK||d<=0)return false;const o=RANKD.slice().sort((a,b)=>b.d-a.d);return o.length<3||d>o[2].d}
+function finishOver(){if(podiumOK())startBonus();else goNext()}
 function askNext(done){
   const m=$('NX'),d=bestValid();
   $('NXd').textContent='今回の最長：'+d.toFixed(1)+' m';
@@ -712,7 +717,7 @@ function chance(p){return Math.random()<p}
 function dlg(lines,kind,v){lines.forEach(l=>say(l[0],fm(l[1],v),kind==='ev',kind==='ev'?'ev':'dl'))}
 const fmtM=m=>m>=1000?m.toLocaleString()+'m':Math.round(m)+'m';
 // ---- ランキング（上位の記録と名前） ----
-let RANKD=[];
+let RANKD=[],RANK_OK=false;
 // ======== 投げた瞬間 ========
 const REL={
  0:{a:['おっと、ふわっとした投擲です…！','あーっと、力が入っていない！','これは…ちょっと置きにいったか！？','ふわり…とうんこが舞い上がる！','おや？ 様子見の一投でしょうか！'],
@@ -1527,6 +1532,9 @@ function em(t,x,y,s,rot){
   ctx.font=s+'px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(t,0,0);ctx.restore();
 }
 function txt(t,x,y,s,c,al){ctx.fillStyle=c||'#2b2118';ctx.font='bold '+s+'px system-ui,sans-serif';ctx.textAlign=al||'left';ctx.textBaseline='alphabetic';ctx.fillText(t,x,y)}
+const TFONT='"M PLUS Rounded 1c",system-ui,sans-serif';
+try{document.fonts&&document.fonts.load('900 66px "M PLUS Rounded 1c"','ゴリラのウホ投げ選手権').catch(()=>{})}catch(e){}
+function ttxt(t,x,y,s){ctx.save();ctx.font='900 '+s+'px '+TFONT;ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.lineJoin='round';ctx.lineWidth=8;ctx.strokeStyle='#2b2118';ctx.strokeText(t,x,y);ctx.fillStyle='#fff';ctx.fillText(t,x,y);ctx.restore()}
 function otxt(t,x,y,s){ctx.lineWidth=6;ctx.strokeStyle='#2b2118';ctx.font='bold '+s+'px system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.strokeText(t,x,y);txt(t,x,y,s,'#fff','center')}
 function hash(i,j){const n=Math.sin(i*127.1+j*311.7)*43758.5453;return n-Math.floor(n)}
 function mixc(a,b,t){t=Math.max(0,Math.min(1,t));return 'rgb('+a.map((v,i)=>Math.round(v+(b[i]-v)*t)).join(',')+')'}
@@ -1901,7 +1909,7 @@ function loadPlayers(force){
     if(!r||!r.ok)return;
     const seen=new Set(),out=[];
     r.rows.forEach(x=>{const n=String(x.n||'').trim();if(n&&!seen.has(n)&&out.length<100){seen.add(n);out.push(n)}});
-    PLAYERS=out;
+    PLAYERS=out;RANK_OK=true;
     // 実況で使う上位100人（自分の行は除く。順位は実際の順位のまま）
     RANKD=r.rows.slice(0,100).map((x,i)=>({n:String(x.n||'').trim(),d:Number(x.d)||0,rank:i+1})).filter(x=>!(r.me&&r.me.rank===x.rank)&&x.n&&x.d>0);
   }).catch(()=>{});
@@ -1914,15 +1922,30 @@ function buildRoll(){
   pl.push('','');
   return CRED.slice(0,i).concat(pl,CRED.slice(i));
 }
+const THX_HOLD=4.5;
 function rollLen(){return S.rollL?60:CRED_T}
+function drawThanks(a,x,y){
+  const msg='Thank you for playing！',tt=performance.now()/1000;
+  ctx.save();ctx.globalAlpha=a;
+  ctx.font='bold 54px system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  ctx.lineJoin='round';ctx.lineWidth=9;ctx.strokeStyle='#000';ctx.strokeText(msg,x,y);
+  ctx.save();ctx.shadowColor='rgba(255,215,0,.9)';ctx.shadowBlur=20;ctx.fillStyle='#ffc700';ctx.fillText(msg,x,y);ctx.restore();
+  const gx=x-400+((performance.now()/1800)%1)*1100-150;
+  const g=ctx.createLinearGradient(gx-120,0,gx+120,0);
+  g.addColorStop(0,'rgba(255,255,255,0)');g.addColorStop(0.5,'rgba(255,255,255,.95)');g.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=g;ctx.fillText(msg,x,y);
+  [[-190,-45],[-70,-55],[70,-48],[190,-52],[290,-38]].forEach(([dx,dy],i)=>{ctx.globalAlpha=a*(0.3+0.7*Math.abs(Math.sin(tt*2.2+i*1.3)));em('✨',x+dx,y+dy,26)});
+  ctx.restore();
+}
 function drawRoll(){
   if(S.roll==null)return;
-  const L=S.rollL||CRED,sp=(450+L.length*CRED_LH)/rollLen(),y0=450+CRED_LH-S.roll*sp;
+  const L=S.rollL||CRED,TY=225,ti=L.length+2,sp=(450+CRED_LH+ti*CRED_LH-TY)/(rollLen()-THX_HOLD),y0=450+CRED_LH-S.roll*sp;
   ctx.font='bold 16px system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='alphabetic';
   ctx.lineWidth=4;ctx.strokeStyle='#000';ctx.fillStyle='#fff';
   L.forEach((l,i)=>{const y=y0+i*CRED_LH;if(!l||y<=-20||y>=470)return;
     if(Array.isArray(l)){const xs=l.length===1?[400]:l.length===2?[300,500]:[220,400,580];l.forEach((n,j)=>{ctx.strokeText(n,xs[j],y);ctx.fillText(n,xs[j],y)})}
     else{ctx.strokeText(l,400,y);ctx.fillText(l,400,y)}});
+  {const yt=Math.max(TY,y0+ti*CRED_LH);if(yt<500)drawThanks(Math.min(1,(rollLen()-S.roll)/0.8),400,yt+18)}
 }
 // ボーナス画面：黒からフェードイン → 国歌 → 黒へフェードアウト（タップで早送り）
 const FADE=4,BONUS_T=21.1;
@@ -1944,21 +1967,6 @@ function drawBonus(){
   const a=bonusAlpha(b);
   ctx.globalAlpha=a;
   if(BONUS_IMG.complete&&BONUS_IMG.naturalWidth)ctx.drawImage(BONUS_IMG,0,0,800,450);
-  const ta=Math.max(0,Math.min(1,(b.t-FADE)/0.6));
-  if(ta>0){
-    const msg='Thank you for playing！',tt=performance.now()/1000;
-    ctx.globalAlpha=a*ta;
-    ctx.font='bold 54px system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='alphabetic';
-    ctx.lineJoin='round';ctx.lineWidth=9;ctx.strokeStyle='#000';ctx.strokeText(msg,400,300);
-    ctx.save();ctx.shadowColor='rgba(255,215,0,.9)';ctx.shadowBlur=20;ctx.fillStyle='#ffc700';ctx.fillText(msg,400,300);ctx.restore();
-    const gx=((performance.now()/1800)%1)*1100-150;
-    const g=ctx.createLinearGradient(gx-120,0,gx+120,0);
-    g.addColorStop(0,'rgba(255,255,255,0)');g.addColorStop(0.5,'rgba(255,255,255,.95)');g.addColorStop(1,'rgba(255,255,255,0)');
-    ctx.fillStyle=g;ctx.fillText(msg,400,300);
-    [[210,255],[330,245],[470,252],[590,248],[690,262]].forEach(([x,y],i)=>{
-      ctx.globalAlpha=a*ta*(0.3+0.7*Math.abs(Math.sin(tt*2.2+i*1.3)));em('✨',x,y,26);
-    });
-  }
   ctx.globalAlpha=1;
 }
 function drawTap(){
@@ -1969,7 +1977,7 @@ function drawTap(){
   em('💩',520+Math.sin(t*2)*10,115+Math.sin(t*3)*8,44,t*2);
   if(Math.floor(t*2)%2===0)otxt('タップしてスタート',400,320,44);
   txt('Produced by the Yaoyorozu Brothers',400,420,16,'#bbb','center');
-  txt('バージョン2.0.10',400,442,13,'#999','center');
+  txt('バージョン2.1.0',400,442,13,'#999','center');
 }
 function draw(){
   if(isPr(S.state)){drawPractice();return}
@@ -2195,9 +2203,9 @@ function drawTitle(){
   em('🦍',230,310,170);
   em('💩',400+Math.sin(t*2)*20,240+Math.sin(t*3)*14,64,t*2);
   em('🧍‍♂️',600,330,100);
-  otxt('ゴリラのウホ投げ',400,100,66);
-  otxt('選手権',400,165,50);
-  txt('バージョン2.0.10',400,190,15,'#2b2118','center');
+  ttxt('ゴリラのウホ投げ',400,100,66);
+  ttxt('選手権',400,165,50);
+  txt('バージョン2.1.0',400,190,15,'#2b2118','center');
   txt('自己ベスト '+best.toFixed(1)+' m',400,215,24,'#2b2118','center');
   {const ti=titleIdx(best);ctx.font='bold 18px system-ui,sans-serif';txt('称号：'+titleStr(ti),400,242,18,'#2b2118','center')}
   uiBtn(16,16,150,40,'📜 記録帳','t_book',{bg:'#8a6a2a',fs:17,line:'#fff'});
