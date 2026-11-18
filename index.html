@@ -398,7 +398,7 @@ function bUp(){
 }
 function restart(){
   if(modalOpen||isPr(S.state))return;
-  if(S.state==='tap'){S.state='title';bgmStart('title');loadPlayers()}
+  if(S.state==='tap'){S.state='title';bgmStart('title');loadPlayers(true)}
   else if(S.state==='ready'){S.state='aim';S.angle=0;S.t=LIMIT;S.lastTick=99;S.go=1.3;whistle(0.9)}
   else if(S.state==='fly'){if(canSkip())skipFly()}
   else if(S.state==='announce'&&S.hold<=0){S.state='board';S.hold=0.6;S.flash=0.25;if(S.fresh&&!S.lfoul){boardFxStart();pop(0.2);pop(0.5)}boardSnd()}
@@ -478,6 +478,7 @@ function openNameEntry(d,done){
     try{localStorage.setItem('gname',name)}catch(e){}
     ok.disabled=true;msg.textContent='送信中…';
     rankFetch('post',{id:pid(),name:name,dist:d}).then(r=>{
+      setTimeout(()=>loadPlayers(true),300);
       if(!r||!r.ok)throw new Error('ng');
       hideModal(m);openRanking(done);
     }).catch(()=>{ok.disabled=false;msg.textContent='送信できませんでした。通信を確認して、もう一度「載せる」を押してください。'});
@@ -559,7 +560,9 @@ function foul(){
   buzz();S.msg='時間切れ！ FOUL';S.msgT=1.5;S.state='wait';S.wait=1.5;
 }
 function hit(who){comHit(who);GFX.poopEnd(S.p.x,S.p.y,false);S.state='amb';S.amb={who,t:-0.8};S.p=null;crash()}
+let stPrev='';
 function update(dt){
+  if(S.state==='ready'&&stPrev!=='ready')loadPlayers();stPrev=S.state;
   if(isPr(S.state)){comUpdate(dt);pUpdate(dt);return}
   comUpdate(dt);if(S.cut)S.cut.t+=dt;if(S.skipFx>0)S.skipFx-=dt;
   if(bgmAt>0){bgmAt-=dt;if(bgmAt<=0){bgmAt=0;bgmStart('game')}}
@@ -719,8 +722,8 @@ function comKokan(){
   dlg(pick(KOK),'ev');
   if(RANKD.length&&chance(.6)){
     const p=S.pred.d,top=RANKD[0];
-    if(p>=top.d)say('a',P(['1位の{n}選手の記録すら超える勢いだ！','{n}選手の持つ1位の記録、危うし！'],{n:top.n}),true);
-    else{const t=RANKD.find(r=>r.d<=p);if(t)say('a',P(['{n}選手の記録が射程圏内だ！','ランキング上位の{n}選手に迫るか！？'],{n:t.n}),true)}
+    if(p>=top.d)say('a',P(['{r}位の{n}選手の記録すら超える勢いだ！','{n}選手の持つ{r}位の記録、危うし！'],{n:top.n,r:top.rank}),true);
+    else{const t=RANKD.slice().reverse().find(r=>r.d>p);if(t&&p>=t.d*0.8)say('a',P(['{r}位の{n}選手の記録が射程圏内だ！','ランキング{r}位の{n}選手に迫るか！？'],{n:t.n,r:t.rank}),true)}
   }
 }
 // ======== 距離・景色 ========
@@ -788,7 +791,7 @@ function comFly(dt){
     LM.forEach(l=>{if(L<l[0]&&d>=l[0])sayS(P(LMA,{n:l[1]}),LMQ[l[1]]?pick(LMQ[l[1]]):null)});
     if(S.best0>0&&!COM.passBest&&d>S.best0){COM.passBest=true;dlg(pick(PASSB),'ev')}
     for(let k=0;k<S.n;k++){const pd=S.res[k];if(!S.fl[k]&&pd>20&&L<pd&&d>=pd&&!(S.best0>0&&pd>=S.best0-1)){sayS(P(PASSP,{n:k+1,d:fmtM(pd)}))}}
-    if(RANKD.length&&!COM.rkT){for(let r=RANKD.length-1;r>=0;r--){const x=RANKD[r];if(L<x.d&&d>=x.d){sayS(P(PASSR,{r:r+1,n:x.n,d:fmtM(x.d)}));COM.rkT=3;break}}}
+    if(RANKD.length&&!COM.rkT){for(let r=RANKD.length-1;r>=0;r--){const x=RANKD[r];if(L<x.d&&d>=x.d){sayS(P(PASSR,{r:x.rank,n:x.n,d:fmtM(x.d)}));COM.rkT=3;break}}}
   }
   if(COM.rkT>0){COM.rkT-=dt;if(COM.rkT<=0)COM.rkT=0}
   HGT.forEach(x=>{if(COM.lastH<x[0]&&h>=x[0])sayS(pick(x[1]))});
@@ -1727,6 +1730,7 @@ function drawBoard(){
 const CRED=["Instigator : Akiyoshi Ueno", "", "", "Originator : Takashi Furuya", "", "", "Programmer : Claude(AI)", "", "", "Songs used in the game", "", "opening", "天下に行っていいんか？", "vocal : Hiina Tsukiori", "Composition : Yasuhiro Kitada", "", "Background music during competition", "生きて生きて生きて、死ぬまで生きて", "vocal : Yasuhiro Kitada", "soprano : Itsuki", "chorus : Yaoyorozu brothers", "Composition : Yasuhiro Kitada", "", "", "Planning and production", "Yaoyorozu brothers"];
 const CRED_LH=30,CRED_T=35;
 function afterRelease(){
+  loadPlayers();
   const last=S.n===N-1;
   S.pred=predict(S.p);S.flyT=0;S.best0=best;S.noSkip=false;S.cut=null;
   comReset();comRelease(S.p,S.p.pw||0);
@@ -1742,14 +1746,18 @@ function afterRelease(){
 }
 // スタッフロールの「Players of this game」：ランキング上位から（同じ名前は上位の1人だけ、最大100人、3列）
 let PLAYERS=null;
-function loadPlayers(){
+// ランキングを読み直す（タイトル・毎投の「Ready…」・投げた直後・名前登録の後。5秒以内の連続は省く）
+let rankAt=0;
+function loadPlayers(force){
   if(!RANK_URL)return;
+  const now=performance.now();if(!force&&now-rankAt<5000)return;rankAt=now;
   rankFetch('get').then(r=>{
     if(!r||!r.ok)return;
     const seen=new Set(),out=[];
     r.rows.forEach(x=>{const n=String(x.n||'').trim();if(n&&!seen.has(n)&&out.length<100){seen.add(n);out.push(n)}});
     PLAYERS=out;
-    RANKD=r.rows.filter((x,i)=>!(r.me&&r.me.rank===i+1)).slice(0,100).map(x=>({n:String(x.n||'').trim(),d:Number(x.d)||0})).filter(x=>x.n&&x.d>0);
+    // 実況で使う上位100人（自分の行は除く。順位は実際の順位のまま）
+    RANKD=r.rows.slice(0,100).map((x,i)=>({n:String(x.n||'').trim(),d:Number(x.d)||0,rank:i+1})).filter(x=>!(r.me&&r.me.rank===x.rank)&&x.n&&x.d>0);
   }).catch(()=>{});
 }
 function buildRoll(){
@@ -1814,7 +1822,7 @@ function drawTap(){
   em('💩',520+Math.sin(t*2)*10,115+Math.sin(t*3)*8,44,t*2);
   if(Math.floor(t*2)%2===0)otxt('タップしてスタート',400,320,44);
   txt('Produced by the Yaoyorozu Brothers',400,420,16,'#bbb','center');
-  txt('バージョン2.0.7',400,442,13,'#999','center');
+  txt('バージョン2.0.8',400,442,13,'#999','center');
 }
 function draw(){
   if(isPr(S.state)){drawPractice();return}
@@ -2039,7 +2047,7 @@ function drawTitle(){
   em('🧍‍♂️',600,330,100);
   otxt('ゴリラのウホ投げ',400,100,66);
   otxt('選手権',400,165,50);
-  txt('バージョン2.0.7',400,190,15,'#2b2118','center');
+  txt('バージョン2.0.8',400,190,15,'#2b2118','center');
   txt('自己ベスト '+best.toFixed(1)+' m',400,215,24,'#2b2118','center');
   uiBtn(150,372,240,58,'🏆 競技モード','t_comp',{bg:'#e0562b',fs:24,line:'#fff'});
   uiBtn(410,372,240,58,'🩺 練習モード','t_prac',{bg:'#2b7de0',fs:24,line:'#fff'});
