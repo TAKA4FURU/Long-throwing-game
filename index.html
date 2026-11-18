@@ -81,6 +81,7 @@ body>#YTW{flex:none;margin:6px auto 4px}
 <button id="BG" style="flex:none;padding:6px 12px;font-size:.85rem;background:#666"></button>
 <button id="KB" style="flex:none;padding:6px 12px;font-size:.85rem;background:#8a3a3a;display:none">🏳️ 棄権</button>
 <button id="RB" style="flex:none;padding:6px 12px;font-size:.85rem;background:#666;display:none">🏆 ランキング</button>
+<button id="BKB" style="flex:none;padding:6px 12px;font-size:.85rem;background:#666;display:none">📜 記録帳</button>
 <label id="BVL" style="display:flex;align-items:center;gap:6px;font-size:.85rem"><span>BGM音量</span> <input id="BV" type="range" min="0" max="100" value="60" style="width:130px"></label>
 <button id="HB" style="flex:none;padding:6px 12px;font-size:.85rem;background:#666">？遊び方</button>
 </div>
@@ -564,6 +565,7 @@ function askNext(done){
 function afterOver(){const d=bestValid();if(RANK_URL&&d>0)openNameEntry(d,finishOver);else askNext(finishOver)}
 document.getElementById('BKcl').onclick=()=>hideModal(document.getElementById('BK'));
 const RB=document.getElementById('RB');
+const BKB=document.getElementById('BKB');BKB.onclick=()=>{if(S.state==='title')openBook();BKB.blur()};
 RB.onclick=()=>{if(S.state==='tap'||S.state==='title')openRanking(null);RB.blur()};
 // プレーヤーが右上に出ている間、全面の画面（タイトル・スコアボードなど）はプレーヤーを避けて描く
 function fsT(mode){
@@ -574,7 +576,7 @@ function fsT(mode){
   const sc=Math.min(1,av/800);ctx.translate(SL+(av-800*sc)/2+4,(450-450*sc)/2);ctx.scale(sc,sc);
 }
 function rbShow(){const st_=S.state,bc=document.body.classList;bc.toggle('play',st_==='ready'||st_==='aim'||st_==='throw'||st_==='p_pow'||st_==='p_ang'||st_==='p_all');bc.toggle('noset',st_==='over'||st_==='board'||st_==='bonus');{const KB=document.getElementById('KB'),kv=(!modalOpen&&(S.state==='ready'||S.state==='aim'))?'':'none';if(KB.style.display!==kv)KB.style.display=kv}
-const v=(RANK_URL&&!modalOpen&&(S.state==='tap'||S.state==='title'))?'':'none';if(RB.style.display!==v)RB.style.display=v}
+const v=(RANK_URL&&!modalOpen&&(S.state==='tap'||S.state==='title'))?'':'none';if(RB.style.display!==v)RB.style.display=v;const bv=(!modalOpen&&S.state==='title')?'':'none';if(BKB.style.display!==bv)BKB.style.display=bv}
 function afterThrow(){
   if(S.n>=N){S.state='over';endNormal()}else{S.state='ready';S.p=null;S.t=LIMIT;S.rx=RX;S.rrun=false;S.cam=0;whistle(0.12)}
 }
@@ -1977,7 +1979,7 @@ function drawTap(){
   em('💩',520+Math.sin(t*2)*10,115+Math.sin(t*3)*8,44,t*2);
   if(Math.floor(t*2)%2===0)otxt('タップしてスタート',400,320,44);
   txt('Produced by the Yaoyorozu Brothers',400,420,16,'#bbb','center');
-  txt('バージョン2.1.0',400,442,13,'#999','center');
+  txt('バージョン2.1.1',400,442,13,'#999','center');
 }
 function draw(){
   if(isPr(S.state)){drawPractice();return}
@@ -2201,14 +2203,13 @@ function drawTitle(){
   const g=ctx.createLinearGradient(0,0,0,450);g.addColorStop(0,'#5fb0f0');g.addColorStop(.7,'#cfeaff');g.addColorStop(.7,'#4aa13a');g.addColorStop(1,'#3a8a2c');
   ctx.fillStyle=g;ctx.fillRect(-CX-400,0,W+800,450);
   em('🦍',230,310,170);
-  em('💩',400+Math.sin(t*2)*20,240+Math.sin(t*3)*14,64,t*2);
+  em('💩',400+Math.sin(t*2)*20,300+Math.sin(t*3)*10,56,t*2);
   em('🧍‍♂️',600,330,100);
   ttxt('ゴリラのウホ投げ',400,100,66);
   ttxt('選手権',400,165,50);
-  txt('バージョン2.1.0',400,190,15,'#2b2118','center');
+  txt('バージョン2.1.1',400,190,15,'#2b2118','center');
   txt('自己ベスト '+best.toFixed(1)+' m',400,215,24,'#2b2118','center');
   {const ti=titleIdx(best);ctx.font='bold 18px system-ui,sans-serif';txt('称号：'+titleStr(ti),400,242,18,'#2b2118','center')}
-  uiBtn(16,16,150,40,'📜 記録帳','t_book',{bg:'#8a6a2a',fs:17,line:'#fff'});
   uiBtn(150,372,240,58,'🏆 競技モード','t_comp',{bg:'#e0562b',fs:24,line:'#fff'});
   uiBtn(410,372,240,58,'🩺 練習モード','t_prac',{bg:'#2b7de0',fs:24,line:'#fff'});
   txt('PC：1キー＝競技　2キー＝練習　3キー＝記録帳',400,444,13,'#2b2118','center');
