@@ -2013,7 +2013,7 @@ function drawTap(){
   em('💩',520+Math.sin(t*2)*10,115+Math.sin(t*3)*8,44,t*2);
   if(Math.floor(t*2)%2===0)otxt('タップしてスタート',400,320,44);
   txt('Produced by the Yaoyorozu Brothers',400,420,16,'#bbb','center');
-  txt('バージョン2.1.3',400,442,13,'#999','center');
+  txt('バージョン2.1.4',400,442,13,'#999','center');
 }
 function draw(){
   if(isPr(S.state)){drawPractice();return}
@@ -2241,7 +2241,7 @@ function drawTitle(){
   em('🧍‍♂️',600,330,100);
   ttxt('ゴリラのウホ投げ',400,100,66);
   ttxt('選手権',400,165,50);
-  txt('バージョン2.1.3',400,190,15,'#2b2118','center');
+  txt('バージョン2.1.4',400,190,15,'#2b2118','center');
   txt('自己ベスト '+best.toFixed(1)+' m',400,215,24,'#2b2118','center');
   {const ti=titleIdx(best);ctx.font='bold 18px system-ui,sans-serif';txt('称号：'+titleStr(ti),400,242,18,'#2b2118','center')}
   uiBtn(150,372,240,58,'🏆 競技モード','t_comp',{bg:'#e0562b',fs:24,line:'#fff'});
@@ -2488,7 +2488,7 @@ function drawPractice(){
     const gi=GFX.info();
     if(gi&&P_.holding){const a=P_.angle*Math.PI/180,hx=gx0+(X(gi.tip.x)-gx0)*GZ,hy=fy+(gi.tip.y-fy)*GZ;ctx.strokeStyle='rgba(224,86,43,.9)';ctx.lineWidth=4;ctx.setLineDash([8,8]);ctx.beginPath();ctx.moveTo(hx,hy);ctx.lineTo(hx+90*Math.cos(a),hy-90*Math.sin(a));ctx.stroke();ctx.setLineDash([])}
   }
-  if(st!=='p_res')uiBtn(R-110,GY+14,96,40,'やめる','stop',{bg:'#777',fs:17});
+  if(st!=='p_res')uiBtn(docX()+34,GY-62,96,40,'やめる','stop',{bg:'#777',fs:17});   // ドクターの右隣・セリフの下（連打ボタンと重ならない）
   if(st==='p_pow'||st==='p_all'){
     txt(st==='p_pow'?'① パワー練習':'③ 総合練習',L,40,24,'#2b2118');
     powBar(L,54,240,P_.power);
