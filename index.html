@@ -28,6 +28,8 @@ p{font-size:.8rem;margin:0;opacity:.8;text-align:center}
 .card h3{margin:0;font-size:1.05rem}
 .card input{font-size:16px;padding:10px;border-radius:8px;border:1px solid #888;background:#fff;color:#000}
 .card small{opacity:.75}
+#BKs button{flex:none;background:var(--b);padding:8px 14px;font-size:.9rem;white-space:nowrap;border-radius:10px}
+#BKs button:disabled{opacity:.5}
 .bt{display:flex;gap:10px}.bt button{flex:1;padding:12px 6px;background:var(--b)}.bt .g{background:#666}
 #RKl{overflow:auto;max-height:55vh;border-top:1px solid #555}
 .rw{display:flex;gap:8px;padding:5px 2px;border-bottom:1px solid #3a322e;font-size:.9rem}
@@ -139,6 +141,8 @@ body>#YTW{flex:none;margin:6px auto 4px}
 <h4 style="margin:10px 0 4px">💬 レアセリフ図鑑 <span id="BKrc"></span></h4>
 <div id="BKr"></div>
 <div id="BKp" style="font-size:.85rem;opacity:.8;margin-top:8px"></div>
+<h4 style="margin:14px 0 4px">💾 記録の引き継ぎ</h4>
+<div id="BKs" style="display:flex;flex-direction:column;gap:8px;background:rgba(255,255,255,.06);border-radius:10px;padding:10px"></div>
 <div class="bt"><button id="BKcl">閉じる</button></div>
 </div></div>
 <div id="NX" class="ov" hidden><div class="card">
@@ -438,7 +442,7 @@ function endNormal(){
   chord([131,262,330,392,523],1.6,0.28,0.13);
   noise(1.4,5000,0.5,0.25,0.28,0.01);
 }
-function countPlay(){PLAYS++;lsSet('gplays',PLAYS);if(PLAYS>=10)badge('p10');if(PLAYS>=50)badge('p50')}
+function countPlay(){PLAYS++;lsSet('gplays',PLAYS);if(PLAYS>=10)badge('p10');if(PLAYS>=50)badge('p50');cloudSave()}
 function endFail(){
   countPlay();
   S.cmt=cmtFail(S.fail);
@@ -1821,7 +1825,7 @@ function badge(id){
   tone(1047,1047,0.12,'triangle',0.15);tone(1568,1568,0.3,'triangle',0.15,0.1);
 }
 function rareSeen(i){if(RARESEEN[i])return;RARESEEN[i]=1;lsSet('grare',RARESEEN);toast('💬','レアセリフ発見！','記録帳の図鑑に追加（'+Object.keys(RARESEEN).length+'/'+RARE.length+'）')}
-function pDoneMark(m){PDONE[m]=1;lsSet('gpdone',PDONE);if(PDONE.pow&&PDONE.ang&&PDONE.all)badge('docall')}
+function pDoneMark(m){PDONE[m]=1;lsSet('gpdone',PDONE);if(PDONE.pow&&PDONE.ang&&PDONE.all)badge('docall');cloudSave(4000)}
 function drawToasts(dt){
   if(!TOASTS.length)return;
   const t=TOASTS[0];t.t+=dt;if(t.t>2.8){TOASTS.shift();return}
@@ -1836,6 +1840,123 @@ function drawToasts(dt){
 }
 // ---- 記録帳 ----
 const ROUTE=[[0,'スタジアム'],[2000,'富士山'],[5000,'名古屋'],[10000,'京都'],[13000,'関門海峡'],[21000,'沖縄'],[25000,'台湾'],[29000,'香港'],[40000,'アンコールワット'],[50000,'インド'],[60000,'ドバイ'],[70000,'ピラミッド'],[85000,'キリマンジャロ'],[100000,'ゴリラの故郷'],[150000,'バナナの森の果て']];
+// ===== 記録の引き継ぎ（合言葉でサーバー保存／引き継ぎコード） =====
+const CODE_AL='23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+function myCode(){
+  let c=lsGet('gcode','');
+  if(!/^[2-9A-HJ-NP-Z]{8}$/.test(c)){
+    const r=new Uint8Array(8);try{crypto.getRandomValues(r)}catch(e){for(let i=0;i<8;i++)r[i]=Math.random()*256|0}
+    c='';for(const v of r)c+=CODE_AL[v&31];lsSet('gcode',c);
+  }
+  return c;
+}
+function fmtCode(c){return 'UHO-'+c.slice(0,4)+'-'+c.slice(4)}
+function myName(){try{return localStorage.getItem('gname')||''}catch(e){return ''}}
+function saveBlob(){return {v:1,best:best,badge:BADGE,rare:RARESEEN,plays:PLAYS,pdone:PDONE,name:myName()}}
+function setPid(id){pid_=id;try{localStorage.setItem('gpid',id)}catch(e){}}
+// 良い方を合体：自己ベストは長い方、バッジ・レアセリフ・練習は両方、プレイ回数は足し算（同じ人のデータなら大きい方）
+function mergeBlob(o,sameId){
+  if(!o||typeof o!=='object')return;
+  const b=Number(o.best)||0;
+  if(b>best){best=b;try{localStorage.setItem('gbest',best)}catch(e){}}
+  if(o.badge&&typeof o.badge==='object')for(const k in o.badge){if(BADGES.some(x=>x[0]===k)&&(!BADGE[k]||o.badge[k]<BADGE[k]))BADGE[k]=o.badge[k]||Date.now()}
+  if(o.rare&&typeof o.rare==='object')for(const k in o.rare)if(+k>=0&&+k<RARE.length)RARESEEN[k]=1;
+  if(o.pdone&&typeof o.pdone==='object')for(const k of ['pow','ang','all'])if(o.pdone[k])PDONE[k]=1;
+  const p=Math.max(0,Math.floor(Number(o.plays)||0));PLAYS=sameId?Math.max(PLAYS,p):PLAYS+p;
+  if(o.name&&!myName())try{localStorage.setItem('gname',String(o.name).slice(0,10))}catch(e){}
+  // 距離で取れるバッジは自己ベストから
+  [[300,'d300'],[21000,'d21000'],[25000,'d25000'],[100000,'d100000']].forEach(([d,id])=>{if(best>=d&&!BADGE[id])BADGE[id]=Date.now()});
+  if(PDONE.pow&&PDONE.ang&&PDONE.all&&!BADGE.docall)BADGE.docall=Date.now();
+  if(PLAYS>=10&&!BADGE.p10)BADGE.p10=Date.now();if(PLAYS>=50&&!BADGE.p50)BADGE.p50=Date.now();
+  lsSet('gbadge',BADGE);lsSet('grare',RARESEEN);lsSet('gplays',PLAYS);lsSet('gpdone',PDONE);
+  TI0=titleIdx(best);
+}
+// 端末だけで使える引き継ぎコード（サーバー不要）
+function b64e(s){return btoa(unescape(encodeURIComponent(s))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+function b64d(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';return decodeURIComponent(escape(atob(s)))}
+function offlineCode(){const o=saveBlob();o.id=pid();o.code=myCode();return 'UHOSAVE1-'+b64e(JSON.stringify(o))}
+// サーバー保存（試合・練習の終わりに自動）
+let saveTm=null,saving=false;
+function cloudSave(delay){
+  if(!RANK_URL)return;
+  clearTimeout(saveTm);saveTm=setTimeout(cloudSaveNow,delay==null?1500:delay);
+}
+function cloudSaveNow(retry){
+  if(!RANK_URL||saving)return;
+  saving=true;
+  rankFetch('post',{act:'save',id:pid(),code:myCode(),data:JSON.stringify(saveBlob())})
+    .then(r=>{
+      saving=false;
+      if(r&&r.ok){const n=Date.now();lsSet('gsaved',n);const e=document.getElementById('BKst');if(e)e.textContent=svTime(n);return}
+      if(r&&r.error==='code taken'&&!retry){lsSet('gcode','');cloudSaveNow(true)}
+    }).catch(()=>{saving=false});
+}
+function cloudLoad(body){return rankFetch('post',Object.assign({act:'load'},body))}
+function bkMsg(t,ok){const e=document.getElementById('BKsm');if(e){e.textContent=t;e.style.color=ok?'#9fe6a0':'#ffb3a0'}}
+function copyText(t,okMsg){
+  const done=()=>bkMsg(okMsg,true);
+  const fb=()=>{const ta=document.getElementById('BKcp');ta.hidden=false;ta.value=t;ta.focus();ta.select();bkMsg('自動でコピーできなかったので、下の文字を長押ししてコピーしてください',false)};
+  try{navigator.clipboard.writeText(t).then(done,fb)}catch(e){fb()}
+}
+function svTime(sv){return sv?new Date(sv).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'まだ'}
+function fillSave(){
+  const box=document.getElementById('BKs');if(!box)return;
+  const sv=lsGet('gsaved',0);
+  let h='';
+  if(RANK_URL){
+    h+='<div>あなたの合言葉</div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="font-size:1.35rem;letter-spacing:.06em;font-family:ui-monospace,monospace">'+fmtCode(myCode())+'</b><button id="BKc1" style="padding:6px 12px;font-size:.85rem">コピー</button></div>';
+    h+='<div style="font-size:.8rem;opacity:.8">記録は試合・練習が終わるたびに自動でサーバーに保存されます（最終保存：<span id="BKst">'+svTime(sv)+'</span>）。<br>アイコンを消したり機種を変えたりしたときは、この合言葉で記録を戻せます。スクショかメモで控えておいてください。</div>';
+  }else h+='<div style="font-size:.8rem;opacity:.8">このページでは合言葉のサーバー保存は使えません。引き継ぎコードを使ってください。</div>';
+  h+='<div><button id="BKc2" style="padding:6px 12px;font-size:.85rem;background:#666">引き継ぎコードをコピー</button> <span style="font-size:.75rem;opacity:.75">（ネットなしでも使える長いコード）</span></div>';
+  h+='<div style="display:flex;gap:8px;flex-wrap:wrap"><input id="BKin" placeholder="'+(RANK_URL?'合言葉 または 引き継ぎコード':'引き継ぎコード')+'" style="flex:1;min-width:180px" autocomplete="off" autocapitalize="characters"><button id="BKrs" style="padding:6px 14px">記録を戻す</button></div>';
+  h+='<div id="BKsm" style="font-size:.85rem;min-height:1.2em"></div><textarea id="BKcp" hidden rows="3" style="width:100%;font-size:12px" readonly></textarea>';
+  box.innerHTML=h;
+  const c1=document.getElementById('BKc1');if(c1)c1.onclick=()=>copyText(fmtCode(myCode()),'合言葉をコピーしました');
+  document.getElementById('BKc2').onclick=()=>copyText(offlineCode(),'引き継ぎコードをコピーしました。メモ帳などに貼って保存してください');
+  document.getElementById('BKrs').onclick=restoreFrom;
+}
+function restoreDone(){
+  bkMsg('記録を戻しました！ 自己ベスト '+best.toFixed(1)+' m',true);
+  cloudSave(0);if(RANK_URL)loadPlayers(true);
+  const k=document.getElementById('BK').scrollTop;openBook();document.getElementById('BK').scrollTop=k;
+  bkMsg('記録を戻しました！ 自己ベスト '+best.toFixed(1)+' m',true);
+}
+function restoreFrom(){
+  const raw=(document.getElementById('BKin').value||'').trim();
+  if(!raw){bkMsg('合言葉か引き継ぎコードを入れてください',false);return}
+  // 引き継ぎコード
+  if(/^UHOSAVE1-/i.test(raw)){
+    let o=null;try{o=JSON.parse(b64d(raw.slice(9).replace(/\s/g,'')))}catch(e){}
+    if(!o||typeof o!=='object'){bkMsg('引き継ぎコードが読めませんでした。最後までコピーできているか確認してください',false);return}
+    const same=o.id===pid();
+    mergeBlob(o,same);
+    if(typeof o.id==='string'&&/^[0-9a-f]{16,64}$/.test(o.id))setPid(o.id);
+    if(typeof o.code==='string'&&/^[2-9A-HJ-NP-Z]{8}$/.test(o.code))lsSet('gcode',o.code);
+    restoreDone();return;
+  }
+  if(!RANK_URL){bkMsg('このページでは引き継ぎコードだけ使えます',false);return}
+  const low=raw.toLowerCase().replace(/\s/g,'');
+  let body=null,kind='';
+  if(/^[0-9a-f]{16,64}$/.test(low)){body={id:low};kind='id'}
+  else{let n=raw.toUpperCase().replace(/[^0-9A-Z]/g,'');if(n.length===11&&n.startsWith('UHO'))n=n.slice(3);
+    if(/^[2-9A-HJ-NP-Z]{8}$/.test(n)){body={code:n};kind='code'}}
+  if(!body){bkMsg('合言葉は「UHO-」から始まる英数字です。もう一度確かめてください',false);return}
+  const btn=document.getElementById('BKrs');btn.disabled=true;bkMsg('サーバーに問い合わせ中…',true);
+  cloudLoad(body).then(r=>{
+    btn.disabled=false;
+    if(!r||!r.ok){bkMsg(r&&r.error==='not found'?'その合言葉の記録は見つかりませんでした':'サーバーの準備ができていないか、通信に失敗しました',false);return}
+    let o=null;try{o=r.data?JSON.parse(r.data):null}catch(e){}
+    if(!o&&r.rank)o={best:r.rank.d,name:r.rank.n};
+    const id=String(r.id||'');
+    mergeBlob(o,id===pid());
+    if(/^[0-9a-f]{16,64}$/.test(id))setPid(id);
+    if(kind==='code')lsSet('gcode',body.code);else if(r.code&&/^[2-9A-HJ-NP-Z]{8}$/.test(r.code))lsSet('gcode',r.code);else lsSet('gcode','');
+    restoreDone();
+  }).catch(()=>{btn.disabled=false;bkMsg('通信に失敗しました。電波の良いところでもう一度お試しください',false)});
+}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)cloudSave(0)});
+setTimeout(()=>{if(RANK_URL&&!lsGet('gsaved',0)&&(best>0||PLAYS>0))cloudSave(0)},4000);
+
 function openBook(){
   const m=document.getElementById('BK'),ti=titleIdx(best),nx=TITLES[ti+1];
   document.getElementById('BKt').innerHTML='<div style="font-size:1.15rem;font-weight:800">'+TITLES[ti][1]+' '+TITLES[ti][2]+'</div><div>自己ベスト '+best.toFixed(1)+' m'+(nx?'　／　次の称号「'+nx[1]+' '+nx[2]+'」まで あと '+fmtM(Math.ceil(nx[0]-best)):'　／　最高の称号です！')+'</div>';
@@ -1863,6 +1984,7 @@ function openBook(){
     e.textContent=on?(d.map(l=>(l[0]==='a'?'実況「':'ゴリ山「')+l[1]+'」').join('　')):'？？？（まだ聞いていません）';r.appendChild(e)});
   document.getElementById('BKrc').textContent='（'+rc+' / '+RARE.length+'）';
   document.getElementById('BKp').textContent='競技をプレイした回数：'+PLAYS+' 回';
+  fillSave();
   showModal(m);
 }
 function cmtFail(w){const a=w==='g'?CMT_SELF:CMT_REF;return a[Math.floor(Math.random()*a.length)]}
@@ -2013,7 +2135,7 @@ function drawTap(){
   em('💩',520+Math.sin(t*2)*10,115+Math.sin(t*3)*8,44,t*2);
   if(Math.floor(t*2)%2===0)otxt('タップしてスタート',400,320,44);
   txt('Produced by the Yaoyorozu Brothers',400,420,16,'#bbb','center');
-  txt('バージョン2.1.4',400,442,13,'#999','center');
+  txt('バージョン2.1.5',400,442,13,'#999','center');
 }
 function draw(){
   if(isPr(S.state)){drawPractice();return}
@@ -2241,7 +2363,7 @@ function drawTitle(){
   em('🧍‍♂️',600,330,100);
   ttxt('ゴリラのウホ投げ',400,100,66);
   ttxt('選手権',400,165,50);
-  txt('バージョン2.1.4',400,190,15,'#2b2118','center');
+  txt('バージョン2.1.5',400,190,15,'#2b2118','center');
   txt('自己ベスト '+best.toFixed(1)+' m',400,215,24,'#2b2118','center');
   {const ti=titleIdx(best);ctx.font='bold 18px system-ui,sans-serif';txt('称号：'+titleStr(ti),400,242,18,'#2b2118','center')}
   uiBtn(150,372,240,58,'🏆 競技モード','t_comp',{bg:'#e0562b',fs:24,line:'#fff'});
